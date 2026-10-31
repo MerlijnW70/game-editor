@@ -36,16 +36,17 @@ pub struct CollisionDiagnostics {
 /// Update the spatial grid with current entity positions and collision radii
 pub fn update_spatial_grid(
     mut spatial: ResMut<ActiveSpatialGrid>,
-    query: Query<(Entity, &Transform2D, &Collision, &crate::components::Health), Changed<Transform2D>>,
+    query: Query<(Entity, &Transform2D, &Collision)>,
     mut diagnostics: ResMut<CollisionDiagnostics>,
 ) {
     let start = std::time::Instant::now();
 
-    // Update moved entities (skip dead ones)
-    for (entity, transform, collision, health) in &query {
-        if !health.is_dead() {
-            spatial.0.update_entity(entity, transform.position, collision.radius);
-        }
+    // Completely rebuild the spatial grid from scratch each frame
+    // This avoids issues with stale entity references
+    spatial.0.clear();
+
+    for (entity, transform, collision) in &query {
+        spatial.0.update_entity(entity, transform.position, collision.radius);
     }
 
     diagnostics.spatial_update_us = start.elapsed().as_micros() as u32;
