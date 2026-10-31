@@ -7,6 +7,7 @@ pub mod contact;
 pub mod despawn;
 pub mod health;
 pub mod movement;
+pub mod pooling;
 pub mod rendering;
 pub mod spawning;
 
@@ -14,3 +15,4 @@ pub use spawning::EnemySpawner;
 pub use rendering::RenderMetrics;
 pub use camera::spawn_camera;
 pub use collision::CollisionDiagnostics;
+pub use pooling::{pool_maintenance, log_pool_stats};
