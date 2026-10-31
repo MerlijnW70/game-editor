@@ -46,7 +46,14 @@ pub fn spawn_enemies(
     mut commands: Commands,
     mut spawner: ResMut<EnemySpawner>,
     existing: Query<(), With<Enemy>>,
+    all_entities: Query<()>,
 ) {
+    // Cap total entities at 8192 to prevent generation overflow
+    const MAX_ENTITIES: usize = 8192;
+    if all_entities.iter().count() >= MAX_ENTITIES {
+        return;
+    }
+
     let missing = spawner.target_count.saturating_sub(existing.iter().len());
     let count = missing.min(spawner.max_per_frame);
     if count == 0 {

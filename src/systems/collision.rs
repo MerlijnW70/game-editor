@@ -36,7 +36,7 @@ pub struct CollisionDiagnostics {
 /// Update the spatial grid with current entity positions and collision radii
 pub fn update_spatial_grid(
     mut spatial: ResMut<ActiveSpatialGrid>,
-    query: Query<(Entity, &Transform2D, &Collision)>,
+    query: Query<(Entity, &Transform2D, &Collision), Without<Disabled>>,
     mut diagnostics: ResMut<CollisionDiagnostics>,
 ) {
     let start = std::time::Instant::now();
@@ -55,7 +55,7 @@ pub fn update_spatial_grid(
 /// Broad phase: use spatial grid to find potential collision pairs
 fn broad_phase_collisions(
     spatial: &ActiveSpatialGrid,
-    entities: &Query<(Entity, &Transform2D, &Collision, &Team)>,
+    entities: &Query<(Entity, &Transform2D, &Collision, &Team), Without<Disabled>>,
 ) -> Vec<CollisionPair> {
     let mut pairs = Vec::new();
     let mut seen: HashSet<CollisionPair> = HashSet::new();
@@ -91,7 +91,7 @@ fn broad_phase_collisions(
 /// Narrow phase: test circle-circle collisions for broad phase pairs
 fn narrow_phase_collisions(
     pairs: Vec<CollisionPair>,
-    entities: &Query<(Entity, &Transform2D, &Collision, &Team)>,
+    entities: &Query<(Entity, &Transform2D, &Collision, &Team), Without<Disabled>>,
     config: &CollisionConfig,
 ) -> Vec<ContactInfo> {
     let mut contacts = Vec::new();
@@ -129,7 +129,7 @@ fn narrow_phase_collisions(
 /// Collision detection: broad phase + narrow phase
 pub fn detect_collisions(
     spatial: Res<ActiveSpatialGrid>,
-    entities: Query<(Entity, &Transform2D, &Collision, &Team)>,
+    entities: Query<(Entity, &Transform2D, &Collision, &Team), Without<Disabled>>,
     config: Res<CollisionConfig>,
     mut message_writer: MessageWriter<CollisionMessage>,
     mut diagnostics: ResMut<CollisionDiagnostics>,
@@ -167,7 +167,7 @@ pub fn detect_collisions(
 /// Apply collision response: knockback and separation
 pub fn apply_collision_response(
     mut collisions: MessageReader<CollisionMessage>,
-    mut entities: Query<(&mut Transform2D, &mut Velocity)>,
+    mut entities: Query<(&mut Transform2D, &mut Velocity), Without<Disabled>>,
     config: Res<CollisionConfig>,
     mut diagnostics: ResMut<CollisionDiagnostics>,
 ) {

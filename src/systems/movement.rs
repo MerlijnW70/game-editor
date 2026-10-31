@@ -2,7 +2,7 @@ use crate::components::*;
 use bevy::prelude::*;
 
 /// Integrates `Velocity` into `Transform2D::position`.
-pub fn movement(time: Res<Time>, mut query: Query<(&mut Transform2D, &Velocity)>) {
+pub fn movement(time: Res<Time>, mut query: Query<(&mut Transform2D, &Velocity), Without<Disabled>>) {
     let dt = time.delta_secs();
     for (mut transform, velocity) in &mut query {
         transform.position += velocity.0 * dt;
@@ -10,7 +10,7 @@ pub fn movement(time: Res<Time>, mut query: Query<(&mut Transform2D, &Velocity)>
 }
 
 /// Turns `PlayerInput` into player velocity.
-pub fn apply_player_input(mut query: Query<(&PlayerInput, &mut Velocity)>) {
+pub fn apply_player_input(mut query: Query<(&PlayerInput, &mut Velocity), Without<Disabled>>) {
     for (input, mut velocity) in &mut query {
         velocity.0 = input.direction.clamp_length_max(1.0) * input.speed;
     }
@@ -19,7 +19,7 @@ pub fn apply_player_input(mut query: Query<(&PlayerInput, &mut Velocity)>) {
 /// Enemies steer toward the nearest player.
 pub fn enemy_chase(
     players: Query<&Transform2D, With<Player>>,
-    mut enemies: Query<(&Transform2D, &EnemyAi, &mut Velocity), Without<Player>>,
+    mut enemies: Query<(&Transform2D, &EnemyAi, &mut Velocity), (Without<Player>, Without<Disabled>)>,
 ) {
     for (transform, ai, mut velocity) in &mut enemies {
         let target = players.iter().map(|p| p.position).min_by(|a, b| {

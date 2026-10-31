@@ -6,6 +6,7 @@
 //! - `systems`: movement, health, despawn, spawning, contact detection
 //!   (`systems::rendering` and `systems::camera` are reserved)
 //! - `collision`: spatial partitioning, collision detection, and response
+//! - `pool`: memory pooling and entity recycling
 
 pub mod archetypes;
 pub mod bench;
@@ -14,7 +15,9 @@ pub mod components;
 pub mod events;
 pub mod game;
 pub mod plugin;
+pub mod pool;
 pub mod systems;
 
 pub use plugin::{CoreEcsPlugin, CoreSet, RenderingPlugin, RenderSet};
 pub use collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};
+pub use pool::{PoolManager, PoolType};

@@ -14,7 +14,7 @@ mod velocity;
 pub use animation::{AnimationFrames, Camera2D};
 pub use collision::{Collision, CollisionType};
 pub use damage::{Damage, DamageType};
-pub use gameplay::{Enemy, EnemyAi, Lifetime, Player, PlayerInput, Projectile};
+pub use gameplay::{Disabled, Enemy, EnemyAi, Lifetime, Player, PlayerInput, Projectile};
 pub use health::Health;
 pub use layer::Layer;
 pub use sprite::{AnimationState, Sprite};

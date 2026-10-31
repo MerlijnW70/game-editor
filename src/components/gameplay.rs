@@ -50,3 +50,7 @@ impl Lifetime {
         self.remaining <= 0.0
     }
 }
+
+/// Marker: entity is disabled (pooled, not active). Skip systems that update disabled entities.
+#[derive(Component, Debug, Clone, Copy, Default)]
+pub struct Disabled;
