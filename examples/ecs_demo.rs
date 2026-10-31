@@ -13,7 +13,7 @@ use survivors_engine::archetypes::{player_bundle, projectile_bundle};
 use survivors_engine::bench::run_frames;
 use survivors_engine::components::*;
 use survivors_engine::events::{ContactEvent, DamageEvent, DeathEvent};
-use survivors_engine::{CoreEcsPlugin, CoreSet, systems::EnemySpawner};
+use survivors_engine::{systems::EnemySpawner, CoreEcsPlugin, CoreSet};
 
 #[derive(Resource, Default)]
 struct Stats {

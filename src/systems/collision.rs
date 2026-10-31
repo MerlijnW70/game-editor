@@ -18,6 +18,7 @@ use crate::collision::{
     ActiveSpatialGrid, CollisionConfig, CollisionMessage,
 };
 use crate::components::*;
+use crate::debug::LogThrottle;
 use crate::events::ContactEvent;
 use bevy::prelude::*;
 use std::collections::HashSet;
@@ -31,13 +32,25 @@ pub struct CollisionDiagnostics {
     pub response_us: u32,
     pub collision_checks: u32,
     pub actual_collisions: u32,
+    /// Spatial-grid lookups made by the broad phase this frame (one per
+    /// active collider).
+    pub spatial_queries: u32,
+    /// Colliders refused by the spatial grid this frame (non-finite position,
+    /// invalid or oversized radius). They take no part in collisions.
+    pub rejected_colliders: u32,
 }
 
-/// Update the spatial grid with current entity positions and collision radii
+/// Update the spatial grid with current entity positions and collision radii.
+///
+/// Colliders the grid refuses are excluded from collision this frame, counted
+/// in `CollisionDiagnostics::rejected_colliders`, and reported on stderr at
+/// most once per second.
 pub fn update_spatial_grid(
     mut spatial: ResMut<ActiveSpatialGrid>,
     query: Query<(Entity, &Transform2D, &Collision), Without<Disabled>>,
     mut diagnostics: ResMut<CollisionDiagnostics>,
+    time: Res<Time<Real>>,
+    mut report: Local<LogThrottle>,
 ) {
     let start = std::time::Instant::now();
 
@@ -45,10 +58,29 @@ pub fn update_spatial_grid(
     // This avoids issues with stale entity references
     spatial.0.clear();
 
+    let mut rejected = 0u32;
+    let mut example = None;
     for (entity, transform, collision) in &query {
-        spatial.0.update_entity(entity, transform.position, collision.radius);
+        if let Err(error) = spatial
+            .0
+            .update_entity(entity, transform.position, collision.radius)
+        {
+            rejected += 1;
+            example.get_or_insert((entity, error));
+        }
     }
 
+    if let (Some(total), Some((entity, error))) = (
+        report.record(time.elapsed_secs_f64(), u64::from(rejected)),
+        example,
+    ) {
+        eprintln!(
+            "Warning: {total} collider(s) rejected by the spatial grid since the last report \
+             (e.g. {entity}: {error}); they are excluded from collision"
+        );
+    }
+
+    diagnostics.rejected_colliders = rejected;
     diagnostics.spatial_update_us = start.elapsed().as_micros() as u32;
 }
 
@@ -90,13 +122,13 @@ fn broad_phase_collisions(
 
 /// Narrow phase: test circle-circle collisions for broad phase pairs
 fn narrow_phase_collisions(
-    pairs: Vec<CollisionPair>,
+    pairs: &[CollisionPair],
     entities: &Query<(Entity, &Transform2D, &Collision, &Team), Without<Disabled>>,
     config: &CollisionConfig,
 ) -> Vec<ContactInfo> {
     let mut contacts = Vec::new();
 
-    for pair in pairs.into_iter().take(config.max_collisions_per_frame) {
+    for pair in pairs.iter().take(config.max_collisions_per_frame) {
         // Get both entities' data
         let Ok((_, transform_a, collision_a, team_a)) = entities.get(pair.a) else {
             continue;
@@ -110,15 +142,15 @@ fn narrow_phase_collisions(
             continue;
         }
 
-        // Test circle-circle collision
-        if let Some(mut contact) = test_circle_collision(
+        // Test circle-circle collision; the contact carries both entities.
+        if let Some(contact) = test_circle_collision(
+            pair.a,
             transform_a.position,
             collision_a.radius,
+            pair.b,
             transform_b.position,
             collision_b.radius,
         ) {
-            contact.entity_a = pair.a;
-            contact.entity_b = pair.b;
             contacts.push(contact);
         }
     }
@@ -143,7 +175,7 @@ pub fn detect_collisions(
     let start_narrow = std::time::Instant::now();
 
     // Narrow phase: test actual collisions
-    let contacts = narrow_phase_collisions(pairs.clone(), &entities, &config);
+    let contacts = narrow_phase_collisions(&pairs, &entities, &config);
     let narrow_time = start_narrow.elapsed().as_micros() as u32;
     let collision_count = contacts.len() as u32;
 
@@ -160,6 +192,8 @@ pub fn detect_collisions(
 
     diagnostics.broad_phase_us = broad_time;
     diagnostics.narrow_phase_us = narrow_time;
+    // The broad phase makes exactly one grid query per active collider.
+    diagnostics.spatial_queries = entities.iter().len() as u32;
     diagnostics.collision_checks = pairs.len() as u32;
     diagnostics.actual_collisions = collision_count;
 }

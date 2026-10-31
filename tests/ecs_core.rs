@@ -3,11 +3,12 @@
 use bevy::prelude::*;
 use bevy::time::TimeUpdateStrategy;
 use std::time::Duration;
-use survivors_engine::CoreEcsPlugin;
 use survivors_engine::archetypes::*;
 use survivors_engine::components::*;
 use survivors_engine::events::DamageEvent;
+use survivors_engine::resources::PoolManager;
 use survivors_engine::systems::EnemySpawner;
+use survivors_engine::CoreEcsPlugin;
 
 fn test_app() -> App {
     let mut app = App::new();
@@ -60,7 +61,7 @@ fn damage_event_reduces_health() {
 }
 
 #[test]
-fn entity_despawns_at_zero_health() {
+fn dead_enemy_is_retired_to_the_pool_and_made_inert() {
     let mut app = test_app();
     let e = app
         .world_mut()
@@ -68,10 +69,47 @@ fn entity_despawns_at_zero_health() {
         .id();
     damage(&mut app, e, 10.0);
     app.update();
+
+    let world = app.world();
     assert!(
-        app.world().get_entity(e).is_err(),
-        "dead enemy must be despawned"
+        world.get::<Disabled>(e).is_some(),
+        "retired enemies are disabled"
     );
+    assert!(
+        world.get::<Enemy>(e).is_none(),
+        "and stripped of gameplay components"
+    );
+    assert!(world.get::<Health>(e).is_none());
+    assert!(world.get::<Collision>(e).is_none());
+    assert_eq!(world.resource::<PoolManager>().stats().enemies.available, 1);
+}
+
+#[test]
+fn dead_enemy_is_despawned_when_its_pool_is_full() {
+    let mut app = test_app();
+    app.insert_resource(PoolManager::new(1, 1, 1));
+    let a = app
+        .world_mut()
+        .spawn(enemy_bundle(Vec2::new(-500.0, 0.0), 10.0, 0.0))
+        .id();
+    let b = app
+        .world_mut()
+        .spawn(enemy_bundle(Vec2::new(500.0, 0.0), 10.0, 0.0))
+        .id();
+    damage(&mut app, a, 10.0);
+    damage(&mut app, b, 10.0);
+    app.update();
+
+    let pooled = [a, b]
+        .into_iter()
+        .filter(|&e| app.world().get_entity(e).is_ok())
+        .count();
+    assert_eq!(
+        pooled, 1,
+        "one fills the pool, the other is despawned, none leaks"
+    );
+    let stats = app.world().resource::<PoolManager>().stats().enemies;
+    assert_eq!((stats.available, stats.overflows), (1, 1));
 }
 
 #[test]
@@ -84,7 +122,26 @@ fn player_survives_non_lethal_damage() {
 }
 
 #[test]
-fn projectile_despawns_after_lifetime() {
+fn entity_matched_by_several_retire_rules_is_retired_once() {
+    let mut app = test_app();
+    app.insert_resource(PoolManager::new(0, 0, 0));
+    // Dead (health) and expired (lifetime) in the same frame, with no room in
+    // any pool: it must be despawned exactly once and counted once.
+    let e = app
+        .world_mut()
+        .spawn((enemy_bundle(Vec2::ZERO, 10.0, 0.0), Lifetime::new(0.05)))
+        .id();
+    damage(&mut app, e, 10.0);
+    app.update();
+
+    assert!(app.world().get_entity(e).is_err());
+    let stats = app.world().resource::<PoolManager>().stats();
+    let overflows = stats.enemies.overflows + stats.projectiles.overflows + stats.effects.overflows;
+    assert_eq!(overflows, 1);
+}
+
+#[test]
+fn expired_projectile_returns_to_the_projectile_pool() {
     let mut app = test_app();
     let p = app
         .world_mut()
@@ -98,9 +155,16 @@ fn projectile_despawns_after_lifetime() {
         .id();
     app.update(); // 0.1 s
     app.update(); // 0.2 s
-    assert!(app.world().get_entity(p).is_ok());
+    assert!(app.world().get::<Disabled>(p).is_none(), "still flying");
     app.update(); // 0.3 s -> expired
-    assert!(app.world().get_entity(p).is_err());
+
+    assert!(app.world().get::<Disabled>(p).is_some());
+    let stats = app.world().resource::<PoolManager>().stats();
+    assert_eq!(
+        stats.projectiles.available, 1,
+        "projectiles go to the projectile pool"
+    );
+    assert_eq!(stats.effects.available, 0, "not the effect pool");
 }
 
 #[test]

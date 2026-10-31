@@ -5,6 +5,10 @@
 //! Usage:
 //!   cargo run --release --example integrated_demo
 //!   cargo run --release --example integrated_demo -- --frames 600
+//!   cargo run --release --example integrated_demo -- --config tests/fixtures/invalid_game.yaml
+//!
+//! `--config <path>` loads another game config. An invalid file is reported on
+//! stderr and the demo continues on the built-in defaults.
 //!
 //! Controls:
 //!   WASD or Arrow keys - Move player
@@ -16,9 +20,10 @@ use bevy::prelude::*;
 use survivors_engine::archetypes::player_bundle;
 use survivors_engine::bench::run_frames;
 use survivors_engine::game::{
-    GameState, input_system, projectile_system, update_game_state, ui_system,
-    wave_system, FireRateLimiter, UiState,
+    input_system, projectile_system, ui_system, update_game_state, wave_system, FireRateLimiter,
+    GameState, UiState,
 };
+use survivors_engine::resources::ConfigPath;
 use survivors_engine::systems::EnemySpawner;
 use survivors_engine::{CoreEcsPlugin, CoreSet};
 
@@ -28,6 +33,10 @@ fn main() {
         .windows(2)
         .find(|w| w[0] == "--frames")
         .and_then(|w| w[1].parse::<u32>().ok());
+    let config_arg = args
+        .windows(2)
+        .find(|w| w[0] == "--config")
+        .map(|w| ConfigPath(w[1].clone().into()));
 
     println!("=== Integrated Demo: Vampire Survivors Prototype ===");
     println!("Controls: WASD to move, Spacebar to shoot");
@@ -48,6 +57,9 @@ fn main() {
     .insert_resource(EnemySpawner::new(50)) // Start with 50 enemies, scales with waves
     .world_mut()
     .spawn(player_bundle(Vec2::ZERO));
+    if let Some(path) = config_arg {
+        app.insert_resource(path);
+    }
 
     // Add game systems
     app.add_systems(

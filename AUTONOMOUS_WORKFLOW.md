@@ -95,13 +95,8 @@ solive_wallet_check_delivery --attestor YOUR_WALLET
 git merge worker-branch-job-{1,2,3,4}
 git push origin main
 
-# Post Phase 2
-solive_wallet_escrow \
-  --spec_url https://... \
-  --spec_hash <hash> \
-  --amount 0.06 \
-  --attestor YOUR_WALLET
-# (repeat for jobs 5, 6, 7)
+# Post Phase 2: generate hashed, commit-pinned commands, then run what it prints
+bash scripts/solive_post_commands.sh --attestor YOUR_WALLET --approved 1,2,3,4 phase2
 
 # Report to user
 Send: "Phase 1 complete. Phase 2 jobs posted (0.19 SOL). Workers implementing..."
@@ -116,12 +111,8 @@ Send: "Phase 1 complete. Phase 2 jobs posted (0.19 SOL). Workers implementing...
 git merge worker-branch-job-{5,6,7}
 git push origin main
 
-# Post Phase 3
-solive_wallet_escrow \
-  --spec_url https://... \
-  --spec_hash <hash> \
-  --amount 0.08
-# (repeat for jobs 8, 9, 10)
+# Post Phase 3: generate hashed, commit-pinned commands, then run what it prints
+bash scripts/solive_post_commands.sh --attestor YOUR_WALLET --approved 1,2,3,4,5,6,7 phase3
 
 # Report to user
 Send: "Phase 2 complete. Phase 3 jobs posted (0.30 SOL). Workers implementing..."

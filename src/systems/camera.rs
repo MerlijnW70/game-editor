@@ -1,5 +1,5 @@
+use crate::components::{Camera2D, Player, Transform2D};
 use bevy::prelude::*;
-use crate::components::{Camera2D, Transform2D, Player};
 
 /// Smooth camera following with lerp easing
 pub fn camera_follow_player(
@@ -39,6 +39,5 @@ pub fn sync_camera(
 pub fn spawn_camera(commands: &mut Commands, position: Vec2) -> Entity {
     // Note: Camera2dBundle requires DefaultPlugins or rendering features
     // For now, this is a placeholder that creates an entity with the Camera2D component
-    commands.spawn(Camera2D::new(position))
-        .id()
+    commands.spawn(Camera2D::new(position)).id()
 }

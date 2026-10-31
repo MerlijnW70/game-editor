@@ -10,16 +10,18 @@
 //!
 //! **Job #1 Note:** quadtree is a drop-in replacement for grid with better O(log n) performance.
 
-pub mod spatial;
-pub mod quadtree;
 pub mod detection;
+pub mod quadtree;
 pub mod response;
+pub mod spatial;
 
 // Re-export main types
-pub use spatial::{SpatialGrid, SpatialGridStats};
+pub use detection::{
+    test_circle_aabb_collision, test_circle_collision, CollisionPair, ContactInfo,
+};
 pub use quadtree::{QuadtreeIndex, AABB};
-pub use detection::{ContactInfo, CollisionPair, test_circle_collision, test_circle_aabb_collision};
-pub use response::{KnockbackConfig, CollisionResponse};
+pub use response::{CollisionResponse, KnockbackConfig};
+pub use spatial::{SpatialError, SpatialGrid, SpatialGridStats};
 
 use bevy::prelude::*;
 

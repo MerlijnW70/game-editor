@@ -1,10 +1,13 @@
 use crate::collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};
 use crate::debug::DebugProfiler;
 use crate::events::{ContactEvent, DamageEvent, DeathEvent};
-use crate::game::{GameState, FireRateLimiter, UiState};
-use crate::rendering::{BatchingSystem, batching_metrics_system};
+use crate::game::{FireRateLimiter, GameState, UiState};
+use crate::rendering::{batching_metrics_system, BatchingSystem};
 use crate::resources::PrefabLibrary;
-use crate::systems::{camera, config, contact, despawn, health, movement, pooling, prefab_spawn, profiler_system, rendering, spawning, collision};
+use crate::systems::{
+    camera, collision, config, contact, despawn, health, movement, pooling, prefab_spawn,
+    profiler_system, rendering, spawning,
+};
 use bevy::prelude::*;
 
 /// Ordered phases of the core simulation, so other plugins can schedule
@@ -40,6 +43,7 @@ impl Plugin for CoreEcsPlugin {
             .add_message::<CollisionMessage>()
             .init_resource::<ActiveSpatialGrid>()
             .init_resource::<CollisionConfig>()
+            .init_resource::<movement::MovementLimits>()
             .init_resource::<collision::CollisionDiagnostics>()
             .init_resource::<PrefabLibrary>()
             .init_resource::<DebugProfiler>()
@@ -47,7 +51,14 @@ impl Plugin for CoreEcsPlugin {
             .init_resource::<FireRateLimiter>()
             .init_resource::<UiState>()
             .add_systems(Startup, (config::load_config, prefab_spawn::load_prefabs))
-            .add_systems(Update, (config::apply_config, profiler_system::profiler_input))
+            .add_systems(
+                Update,
+                (
+                    config::apply_config,
+                    // Headless apps (MinimalPlugins, tests, servers) have no keyboard.
+                    profiler_system::profiler_input.run_if(resource_exists::<ButtonInput<KeyCode>>),
+                ),
+            )
             .configure_sets(
                 Update,
                 (
@@ -82,7 +93,11 @@ impl Plugin for CoreEcsPlugin {
                     (health::apply_damage, health::mark_dead_sprites)
                         .chain()
                         .in_set(CoreSet::Health),
-                    (despawn::tick_lifetimes, despawn::despawn_dead, pooling::pool_maintenance)
+                    (
+                        despawn::tick_lifetimes,
+                        despawn::despawn_dead,
+                        pooling::pool_maintenance,
+                    )
                         .chain()
                         .in_set(CoreSet::Cleanup),
                     pooling::log_pool_stats.in_set(CoreSet::Cleanup),
@@ -120,11 +135,12 @@ impl Plugin for RenderingPlugin {
                     camera::camera_follow_player.in_set(RenderSet::SyncCamera),
                     camera::sync_camera.in_set(RenderSet::SyncCamera),
                     rendering::calculate_metrics.in_set(RenderSet::Cleanup),
-                    batching_metrics_system::batching_input.in_set(RenderSet::SyncSprites),
+                    batching_metrics_system::batching_input
+                        .run_if(resource_exists::<ButtonInput<KeyCode>>)
+                        .in_set(RenderSet::SyncSprites),
                     batching_metrics_system::collect_batching_metrics.in_set(RenderSet::Cleanup),
                     batching_metrics_system::log_batching_summary.in_set(RenderSet::Cleanup),
                 ),
             );
     }
 }
-

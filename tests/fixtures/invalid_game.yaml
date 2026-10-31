@@ -1,0 +1,27 @@
+# Deliberately invalid game config (see tests/config_validation.rs).
+# Run: cargo run --example integrated_demo -- --config tests/fixtures/invalid_game.yaml
+# Expected: a "config ... rejected" warning listing every bad field, then the
+# demo runs on built-in defaults without panicking.
+game:
+  title: "Invalid Fixture"
+  target_fps: 60
+  max_entities: 0          # must be > 0
+  spawn_radius: -50.0      # must be >= 0
+pools:
+  max_enemies: 0           # must be > 0
+  max_projectiles: 500
+  max_effects: 200
+enemies:
+  base_health: 30.0
+  base_speed: -10.0        # must be > 0
+  base_size: 10.0
+  spawn_interval: .nan     # must be finite and > 0
+waves:
+  base_duration: 30.0
+  difficulty_scale: 0.1
+  boss_interval: 5
+  difficulty_multiplier: 1.0
+rendering:
+  layer_count: 10
+  sprite_batch_size: 256
+  camera_smoothing: 0.1

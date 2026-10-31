@@ -1,10 +1,16 @@
-use crate::resources::{GameConfig, PoolManager};
+use crate::resources::{ConfigPath, GameConfig, PoolManager};
 use bevy::prelude::*;
 
-/// Load game configuration from assets/config/game.yaml
-/// Creates PoolManager from config settings
-pub fn load_config(mut commands: Commands) {
-    let config = GameConfig::load_or_default("assets/config/game.yaml");
+/// Loads the game configuration from `ConfigPath` (default
+/// `assets/config/game.yaml`) and creates the `PoolManager` from it.
+///
+/// Only a validated configuration is ever inserted: a missing, malformed or
+/// invalid file falls back to `GameConfig::default()` with a stderr report.
+pub fn load_config(mut commands: Commands, path: Option<Res<ConfigPath>>) {
+    let path = path
+        .map(|p| p.0.clone())
+        .unwrap_or_else(|| ConfigPath::default().0);
+    let config = GameConfig::load_or_default(&path);
 
     eprintln!(
         "Loaded config: {} ({} FPS target)",

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 
 /// Pool type enumeration for different entity categories
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -9,201 +9,240 @@ pub enum PoolType {
     Effect,
 }
 
-/// Manages entity object pools for high-churn entity types
+/// Outcome of `PoolManager::release`.
+#[must_use = "a rejected entity is not pooled: despawn it, or it stays in the world forever"]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Release {
+    /// The entity is now in the pool (or already was) and will be reused.
+    Pooled,
+    /// The pool is full. The caller must despawn the entity.
+    Rejected,
+}
+
+/// Counters for one pool. All counts are lifetime totals.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct PoolTypeStats {
+    /// Entities waiting in the pool, ready for reuse.
+    pub available: usize,
+    /// Most entities the pool will hold.
+    pub capacity: usize,
+    /// `acquire` calls served from the pool.
+    pub hits: u64,
+    /// `acquire` calls that found the pool empty (the caller spawned fresh).
+    pub misses: u64,
+    /// `release` calls rejected because the pool was full (the caller despawned).
+    pub overflows: u64,
+}
+
+/// One bounded pool of disabled entities.
+#[derive(Debug, Default)]
+struct Pool {
+    free: VecDeque<Entity>,
+    members: HashSet<Entity>,
+    capacity: usize,
+    hits: u64,
+    misses: u64,
+    overflows: u64,
+}
+
+impl Pool {
+    fn with_capacity(capacity: usize) -> Self {
+        Self {
+            free: VecDeque::with_capacity(capacity),
+            members: HashSet::with_capacity(capacity),
+            capacity,
+            ..Default::default()
+        }
+    }
+
+    fn acquire(&mut self) -> Option<Entity> {
+        match self.free.pop_front() {
+            Some(entity) => {
+                self.members.remove(&entity);
+                self.hits += 1;
+                Some(entity)
+            }
+            None => {
+                self.misses += 1;
+                None
+            }
+        }
+    }
+
+    fn release(&mut self, entity: Entity) -> Release {
+        if self.members.contains(&entity) {
+            // Releasing twice must not let two spawns share one entity.
+            return Release::Pooled;
+        }
+        if self.free.len() >= self.capacity {
+            self.overflows += 1;
+            return Release::Rejected;
+        }
+        self.free.push_back(entity);
+        self.members.insert(entity);
+        Release::Pooled
+    }
+
+    fn stats(&self) -> PoolTypeStats {
+        PoolTypeStats {
+            available: self.free.len(),
+            capacity: self.capacity,
+            hits: self.hits,
+            misses: self.misses,
+            overflows: self.overflows,
+        }
+    }
+}
+
+/// Bounded pools of disabled entities for high-churn entity types.
+///
+/// The pools only track entity IDs. Callers own the component state: disable
+/// an entity before releasing it, despawn it when `release` returns
+/// `Release::Rejected`, and insert a complete bundle after `acquire`.
 #[derive(Resource, Debug)]
 pub struct PoolManager {
-    enemy_pool: VecDeque<Entity>,
-    projectile_pool: VecDeque<Entity>,
-    effect_pool: VecDeque<Entity>,
-
-    // Configuration
-    max_enemies: usize,
-    max_projectiles: usize,
-    max_effects: usize,
-
-    // Diagnostics
-    pub total_acquired_enemies: usize,
-    pub total_acquired_projectiles: usize,
-    pub total_acquired_effects: usize,
+    enemies: Pool,
+    projectiles: Pool,
+    effects: Pool,
 }
 
 impl Default for PoolManager {
     fn default() -> Self {
-        Self {
-            enemy_pool: VecDeque::with_capacity(100),
-            projectile_pool: VecDeque::with_capacity(500),
-            effect_pool: VecDeque::with_capacity(200),
-            max_enemies: 100,
-            max_projectiles: 500,
-            max_effects: 200,
-            total_acquired_enemies: 0,
-            total_acquired_projectiles: 0,
-            total_acquired_effects: 0,
-        }
+        Self::new(100, 500, 200)
     }
 }
 
 impl PoolManager {
     pub fn new(max_enemies: usize, max_projectiles: usize, max_effects: usize) -> Self {
         Self {
-            max_enemies,
-            max_projectiles,
-            max_effects,
-            ..Default::default()
+            enemies: Pool::with_capacity(max_enemies),
+            projectiles: Pool::with_capacity(max_projectiles),
+            effects: Pool::with_capacity(max_effects),
         }
     }
 
-    /// Initialize pools by pre-allocating entity IDs
-    pub fn initialize(&mut self, commands: &mut Commands) {
-        // Pre-spawn enemies
-        for _ in 0..self.max_enemies {
-            let entity = commands.spawn((
-                Name::new("pooled_enemy"),
-                Transform::default(),
-                Visibility::Hidden,
-                crate::components::Disabled,
-            )).id();
-            self.enemy_pool.push_back(entity);
-        }
-
-        // Pre-spawn projectiles
-        for _ in 0..self.max_projectiles {
-            let entity = commands.spawn((
-                Name::new("pooled_projectile"),
-                Transform::default(),
-                Visibility::Hidden,
-                crate::components::Disabled,
-            )).id();
-            self.projectile_pool.push_back(entity);
-        }
-
-        // Pre-spawn effects
-        for _ in 0..self.max_effects {
-            let entity = commands.spawn((
-                Name::new("pooled_effect"),
-                Transform::default(),
-                Visibility::Hidden,
-                crate::components::Disabled,
-            )).id();
-            self.effect_pool.push_back(entity);
-        }
-    }
-
-    /// Acquire an entity from the pool
-    pub fn acquire(&mut self, pool_type: PoolType) -> Option<Entity> {
-        let entity = match pool_type {
-            PoolType::Enemy => {
-                self.total_acquired_enemies += 1;
-                self.enemy_pool.pop_front()
-            }
-            PoolType::Projectile => {
-                self.total_acquired_projectiles += 1;
-                self.projectile_pool.pop_front()
-            }
-            PoolType::Effect => {
-                self.total_acquired_effects += 1;
-                self.effect_pool.pop_front()
-            }
-        };
-        entity
-    }
-
-    /// Release an entity back to the pool
-    pub fn release(&mut self, entity: Entity, pool_type: PoolType) {
+    fn pool_mut(&mut self, pool_type: PoolType) -> &mut Pool {
         match pool_type {
-            PoolType::Enemy => {
-                if self.enemy_pool.len() < self.max_enemies {
-                    self.enemy_pool.push_back(entity);
-                }
-            }
-            PoolType::Projectile => {
-                if self.projectile_pool.len() < self.max_projectiles {
-                    self.projectile_pool.push_back(entity);
-                }
-            }
-            PoolType::Effect => {
-                if self.effect_pool.len() < self.max_effects {
-                    self.effect_pool.push_back(entity);
-                }
+            PoolType::Enemy => &mut self.enemies,
+            PoolType::Projectile => &mut self.projectiles,
+            PoolType::Effect => &mut self.effects,
+        }
+    }
+
+    /// Pre-fills every pool to capacity with hidden, disabled entities.
+    pub fn initialize(&mut self, commands: &mut Commands) {
+        for (pool_type, name) in [
+            (PoolType::Enemy, "pooled_enemy"),
+            (PoolType::Projectile, "pooled_projectile"),
+            (PoolType::Effect, "pooled_effect"),
+        ] {
+            let pool = self.pool_mut(pool_type);
+            while pool.free.len() < pool.capacity {
+                let entity = commands
+                    .spawn((
+                        Name::new(name),
+                        Visibility::Hidden,
+                        crate::components::Disabled,
+                    ))
+                    .id();
+                // Fresh entities are never already members, and there is room.
+                let _ = pool.release(entity);
             }
         }
     }
 
-    /// Get pool statistics
+    /// Takes a pooled entity, or `None` when the pool is empty (counted as a miss).
+    pub fn acquire(&mut self, pool_type: PoolType) -> Option<Entity> {
+        self.pool_mut(pool_type).acquire()
+    }
+
+    /// Returns a disabled entity to its pool. See `Release`.
+    pub fn release(&mut self, entity: Entity, pool_type: PoolType) -> Release {
+        self.pool_mut(pool_type).release(entity)
+    }
+
+    /// Snapshot of every pool's counters.
     pub fn stats(&self) -> PoolStats {
         PoolStats {
-            enemies_available: self.enemy_pool.len(),
-            enemies_total: self.max_enemies,
-            projectiles_available: self.projectile_pool.len(),
-            projectiles_total: self.max_projectiles,
-            effects_available: self.effect_pool.len(),
-            effects_total: self.max_effects,
+            enemies: self.enemies.stats(),
+            projectiles: self.projectiles.stats(),
+            effects: self.effects.stats(),
         }
     }
 }
 
-#[derive(Debug, Clone)]
+/// Counters for all pools.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PoolStats {
-    pub enemies_available: usize,
-    pub enemies_total: usize,
-    pub projectiles_available: usize,
-    pub projectiles_total: usize,
-    pub effects_available: usize,
-    pub effects_total: usize,
-}
-
-impl PoolStats {
-    pub fn enemies_in_use(&self) -> usize {
-        self.enemies_total - self.enemies_available
-    }
-
-    pub fn projectiles_in_use(&self) -> usize {
-        self.projectiles_total - self.projectiles_available
-    }
-
-    pub fn effects_in_use(&self) -> usize {
-        self.effects_total - self.effects_available
-    }
-
-    pub fn total_in_use(&self) -> usize {
-        self.enemies_in_use() + self.projectiles_in_use() + self.effects_in_use()
-    }
+    pub enemies: PoolTypeStats,
+    pub projectiles: PoolTypeStats,
+    pub effects: PoolTypeStats,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_pool_initialization() {
-        let pool = PoolManager::new(50, 100, 50);
-        let stats = pool.stats();
-        assert_eq!(stats.enemies_total, 50);
-        assert_eq!(stats.projectiles_total, 100);
-        assert_eq!(stats.effects_total, 50);
+    fn entity(index: u32) -> Entity {
+        Entity::from_raw_u32(index).expect("test entity index is valid")
     }
 
     #[test]
-    fn test_pool_stats() {
-        let pool = PoolManager::new(10, 20, 10);
-        let stats = pool.stats();
-        assert_eq!(stats.enemies_in_use(), 0);
-        assert_eq!(stats.projectiles_in_use(), 0);
-        assert_eq!(stats.effects_in_use(), 0);
-        assert_eq!(stats.total_in_use(), 0);
+    fn new_pools_are_empty_with_given_capacity() {
+        let stats = PoolManager::new(50, 100, 25).stats();
+        assert_eq!(stats.enemies.capacity, 50);
+        assert_eq!(stats.projectiles.capacity, 100);
+        assert_eq!(stats.effects.capacity, 25);
+        assert_eq!(stats.enemies.available, 0);
     }
 
     #[test]
-    fn test_pool_diagnostics() {
-        let mut pool = PoolManager::new(5, 10, 5);
+    fn acquire_counts_hits_and_misses() {
+        let mut pool = PoolManager::new(5, 5, 5);
+        assert_eq!(pool.acquire(PoolType::Enemy), None);
+        assert_eq!(pool.release(entity(1), PoolType::Enemy), Release::Pooled);
+        assert_eq!(pool.acquire(PoolType::Enemy), Some(entity(1)));
+        let stats = pool.stats().enemies;
+        assert_eq!((stats.hits, stats.misses, stats.available), (1, 1, 0));
+        assert_eq!(
+            pool.stats().projectiles,
+            PoolTypeStats {
+                capacity: 5,
+                ..Default::default()
+            }
+        );
+    }
 
-        // Simulate acquiring entities
-        pool.acquire(PoolType::Enemy);
-        pool.acquire(PoolType::Enemy);
-        pool.acquire(PoolType::Projectile);
+    #[test]
+    fn full_pool_rejects_and_counts_overflow() {
+        let mut pool = PoolManager::new(2, 1, 1);
+        assert_eq!(pool.release(entity(1), PoolType::Enemy), Release::Pooled);
+        assert_eq!(pool.release(entity(2), PoolType::Enemy), Release::Pooled);
+        assert_eq!(pool.release(entity(3), PoolType::Enemy), Release::Rejected);
+        let stats = pool.stats().enemies;
+        assert_eq!((stats.available, stats.overflows), (2, 1));
+    }
 
-        assert_eq!(pool.total_acquired_enemies, 2);
-        assert_eq!(pool.total_acquired_projectiles, 1);
-        assert_eq!(pool.total_acquired_effects, 0);
+    #[test]
+    fn double_release_never_duplicates_an_entity() {
+        let mut pool = PoolManager::new(5, 5, 5);
+        assert_eq!(pool.release(entity(7), PoolType::Effect), Release::Pooled);
+        assert_eq!(pool.release(entity(7), PoolType::Effect), Release::Pooled);
+        assert_eq!(pool.stats().effects.available, 1);
+        assert_eq!(pool.acquire(PoolType::Effect), Some(entity(7)));
+        assert_eq!(pool.acquire(PoolType::Effect), None);
+        // After being handed out, it may be released again.
+        assert_eq!(pool.release(entity(7), PoolType::Effect), Release::Pooled);
+    }
+
+    #[test]
+    fn pools_are_fifo_and_independent() {
+        let mut pool = PoolManager::new(5, 5, 5);
+        let _ = pool.release(entity(1), PoolType::Enemy);
+        let _ = pool.release(entity(2), PoolType::Enemy);
+        let _ = pool.release(entity(3), PoolType::Projectile);
+        assert_eq!(pool.acquire(PoolType::Enemy), Some(entity(1)));
+        assert_eq!(pool.acquire(PoolType::Enemy), Some(entity(2)));
+        assert_eq!(pool.acquire(PoolType::Projectile), Some(entity(3)));
     }
 }

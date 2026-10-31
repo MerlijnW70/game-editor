@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::rendering::BatchingSystem;
+use bevy::prelude::*;
 
 /// Collect batching metrics each frame
 pub fn collect_batching_metrics(
@@ -19,10 +19,7 @@ pub fn collect_batching_metrics(
 }
 
 /// Log batching summary periodically
-pub fn log_batching_summary(
-    batching: Res<BatchingSystem>,
-    mut frame_counter: Local<u64>,
-) {
+pub fn log_batching_summary(batching: Res<BatchingSystem>, mut frame_counter: Local<u64>) {
     *frame_counter += 1;
 
     // Log every 60 frames (approximately 1 second at 60 FPS)
@@ -46,23 +43,11 @@ pub fn batching_input(
         batching.toggle();
         eprintln!(
             "GPU Batching {}",
-            if batching.enabled { "ENABLED" } else { "DISABLED" }
+            if batching.enabled {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
         );
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_batching_metrics_reset() {
-        let mut metrics = BatchingMetrics::default();
-        metrics.total_sprites = 100;
-        metrics.total_batches = 5;
-
-        metrics.reset();
-        assert_eq!(metrics.total_sprites, 0);
-        assert_eq!(metrics.total_batches, 0);
     }
 }

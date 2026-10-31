@@ -10,7 +10,53 @@ use std::collections::{HashMap, HashSet};
 /// Larger cells reduce cell-count overhead; smaller cells reduce collision checks per cell.
 const GRID_CELL_SIZE: f32 = 50.0;
 
+/// Why `SpatialGrid::update_entity` refused an entity.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SpatialError {
+    /// The position has a NaN or infinite component.
+    NonFinitePosition {
+        /// The rejected position.
+        position: Vec2,
+    },
+    /// The radius is not a finite number greater than zero.
+    InvalidRadius {
+        /// The rejected radius.
+        radius: f32,
+    },
+    /// The radius exceeds `SpatialGrid::MAX_RADIUS`.
+    RadiusTooLarge {
+        /// The rejected radius.
+        radius: f32,
+        /// The largest accepted radius.
+        max: f32,
+    },
+}
+
+impl std::fmt::Display for SpatialError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SpatialError::NonFinitePosition { position } => {
+                write!(f, "collider position {position} is not finite")
+            }
+            SpatialError::InvalidRadius { radius } => {
+                write!(
+                    f,
+                    "collider radius {radius} must be a finite number greater than 0"
+                )
+            }
+            SpatialError::RadiusTooLarge { radius, max } => {
+                write!(f, "collider radius {radius} exceeds the grid maximum {max}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for SpatialError {}
+
 /// Grid-based spatial hash. Assigns entities to cells based on position.
+///
+/// Cells are keyed by signed coordinates (`floor(pos / cell)`), so negative
+/// world positions map to their own cells instead of wrapping.
 pub struct SpatialGrid {
     /// Map from cell key to set of entities in that cell
     cells: HashMap<(i32, i32), Vec<Entity>>,
@@ -18,7 +64,47 @@ pub struct SpatialGrid {
     entity_cells: HashMap<Entity, HashSet<(i32, i32)>>,
 }
 
+/// Inclusive range of cell keys covering a rectangle.
+#[derive(Debug, Clone, Copy)]
+struct CellRange {
+    min: (i32, i32),
+    max: (i32, i32),
+}
+
+impl CellRange {
+    fn covering(min: Vec2, max: Vec2) -> Self {
+        Self {
+            min: SpatialGrid::cell_key(min),
+            max: SpatialGrid::cell_key(max),
+        }
+    }
+
+    /// Number of cells in the range (saturating; ranges can be huge).
+    fn len(&self) -> u64 {
+        let w = (i64::from(self.max.0) - i64::from(self.min.0) + 1).max(0) as u64;
+        let h = (i64::from(self.max.1) - i64::from(self.min.1) + 1).max(0) as u64;
+        w.saturating_mul(h)
+    }
+
+    fn contains(&self, cell: (i32, i32)) -> bool {
+        (self.min.0..=self.max.0).contains(&cell.0) && (self.min.1..=self.max.1).contains(&cell.1)
+    }
+
+    fn iter(self) -> impl Iterator<Item = (i32, i32)> {
+        (self.min.0..=self.max.0)
+            .flat_map(move |gx| (self.min.1..=self.max.1).map(move |gy| (gx, gy)))
+    }
+}
+
 impl SpatialGrid {
+    /// World-space size of one grid cell.
+    pub const CELL_SIZE: f32 = GRID_CELL_SIZE;
+
+    /// Largest collider radius the grid accepts: two cells. Bigger colliders
+    /// would be inserted into many cells per frame; they belong in a dedicated
+    /// structure, not the per-entity hash.
+    pub const MAX_RADIUS: f32 = GRID_CELL_SIZE * 2.0;
+
     pub fn new() -> Self {
         Self {
             cells: HashMap::new(),
@@ -26,7 +112,8 @@ impl SpatialGrid {
         }
     }
 
-    /// Get grid cell key from world position
+    /// Get grid cell key from world position. `floor` keeps negative
+    /// coordinates in their own cells; out-of-range values saturate.
     #[inline]
     fn cell_key(pos: Vec2) -> (i32, i32) {
         (
@@ -35,39 +122,43 @@ impl SpatialGrid {
         )
     }
 
-    /// Get all cells overlapped by a circle at `pos` with `radius`
-    fn cells_for_circle(pos: Vec2, radius: f32) -> Vec<(i32, i32)> {
-        let min_x = ((pos.x - radius) / GRID_CELL_SIZE).floor() as i32;
-        let max_x = ((pos.x + radius) / GRID_CELL_SIZE).floor() as i32;
-        let min_y = ((pos.y - radius) / GRID_CELL_SIZE).floor() as i32;
-        let max_y = ((pos.y + radius) / GRID_CELL_SIZE).floor() as i32;
-
-        let mut cells = Vec::new();
-        for gx in min_x..=max_x {
-            for gy in min_y..=max_y {
-                cells.push((gx, gy));
-            }
+    /// Checks a collider before it enters the grid.
+    pub fn validate_collider(pos: Vec2, radius: f32) -> Result<(), SpatialError> {
+        if !pos.is_finite() {
+            return Err(SpatialError::NonFinitePosition { position: pos });
         }
-        cells
+        if !(radius.is_finite() && radius > 0.0) {
+            return Err(SpatialError::InvalidRadius { radius });
+        }
+        if radius > Self::MAX_RADIUS {
+            return Err(SpatialError::RadiusTooLarge {
+                radius,
+                max: Self::MAX_RADIUS,
+            });
+        }
+        Ok(())
     }
 
-    /// Insert or move entity to its new position
-    pub fn update_entity(&mut self, entity: Entity, pos: Vec2, radius: f32) {
-        // Remove from old cells
-        if let Some(old_cells) = self.entity_cells.remove(&entity) {
-            for cell in old_cells {
-                if let Some(entities) = self.cells.get_mut(&cell) {
-                    entities.retain(|e| *e != entity);
-                }
-            }
-        }
+    /// Inserts or moves `entity` to the circle at `pos` with `radius`.
+    ///
+    /// An invalid collider is rejected with the reason, and the entity is
+    /// removed from the grid so stale cells cannot produce phantom contacts.
+    pub fn update_entity(
+        &mut self,
+        entity: Entity,
+        pos: Vec2,
+        radius: f32,
+    ) -> Result<(), SpatialError> {
+        self.remove_entity(entity);
+        Self::validate_collider(pos, radius)?;
 
-        // Add to new cells
-        let new_cells: HashSet<_> = Self::cells_for_circle(pos, radius).into_iter().collect();
+        let range = CellRange::covering(pos - Vec2::splat(radius), pos + Vec2::splat(radius));
+        let new_cells: HashSet<_> = range.iter().collect();
         for cell in &new_cells {
-            self.cells.entry(*cell).or_insert_with(Vec::new).push(entity);
+            self.cells.entry(*cell).or_default().push(entity);
         }
         self.entity_cells.insert(entity, new_cells);
+        Ok(())
     }
 
     /// Remove entity from grid
@@ -76,6 +167,9 @@ impl SpatialGrid {
             for cell in cells {
                 if let Some(entities) = self.cells.get_mut(&cell) {
                     entities.retain(|e| *e != entity);
+                    if entities.is_empty() {
+                        self.cells.remove(&cell);
+                    }
                 }
             }
         }
@@ -87,49 +181,55 @@ impl SpatialGrid {
         self.entity_cells.clear();
     }
 
-    /// Get all entities potentially colliding with the circle at `pos` with `radius`
+    /// Every entity stored in a cell of `range`, each once.
+    ///
+    /// Walks whichever is smaller: the cells in the range or the occupied
+    /// cells, so a huge query range cannot stall the frame.
+    fn collect_range(&self, range: CellRange) -> Vec<Entity> {
+        let mut result = Vec::new();
+        let mut seen = HashSet::new();
+        let mut take = |entities: &Vec<Entity>| {
+            for &entity in entities {
+                if seen.insert(entity) {
+                    result.push(entity);
+                }
+            }
+        };
+        if range.len() <= self.cells.len() as u64 {
+            for cell in range.iter() {
+                if let Some(entities) = self.cells.get(&cell) {
+                    take(entities);
+                }
+            }
+        } else {
+            for (cell, entities) in &self.cells {
+                if range.contains(*cell) {
+                    take(entities);
+                }
+            }
+        }
+        result
+    }
+
+    /// Entities potentially colliding with the circle at `pos` with `radius`.
+    /// A non-finite position or a negative/NaN radius matches nothing.
     pub fn query_circle(&self, pos: Vec2, radius: f32) -> Vec<Entity> {
-        let cells = Self::cells_for_circle(pos, radius);
-        let mut result = Vec::new();
-        let mut seen = HashSet::new();
-
-        for cell in cells {
-            if let Some(entities) = self.cells.get(&cell) {
-                for &entity in entities {
-                    if seen.insert(entity) {
-                        result.push(entity);
-                    }
-                }
-            }
+        if !pos.is_finite() || radius.is_nan() || radius < 0.0 {
+            return Vec::new();
         }
-        result
+        self.collect_range(CellRange::covering(
+            pos - Vec2::splat(radius),
+            pos + Vec2::splat(radius),
+        ))
     }
 
-    /// Get all entities in axis-aligned bounding box
+    /// Entities in cells overlapping the box; corners may be in either order.
+    /// Non-finite corners match nothing.
     pub fn query_aabb(&self, min: Vec2, max: Vec2) -> Vec<Entity> {
-        let min_cell = Self::cell_key(min);
-        let max_cell = Self::cell_key(max);
-
-        let mut result = Vec::new();
-        let mut seen = HashSet::new();
-
-        for gx in min_cell.0..=max_cell.0 {
-            for gy in min_cell.1..=max_cell.1 {
-                if let Some(entities) = self.cells.get(&(gx, gy)) {
-                    for &entity in entities {
-                        if seen.insert(entity) {
-                            result.push(entity);
-                        }
-                    }
-                }
-            }
+        if !min.is_finite() || !max.is_finite() {
+            return Vec::new();
         }
-        result
-    }
-
-    /// Rebuild grid from scratch (useful after many updates). Usually not needed.
-    pub fn rebuild(&mut self) {
-        // Keep the current state; this is a placeholder for future optimization
+        self.collect_range(CellRange::covering(min.min(max), min.max(max)))
     }
 
     /// Get statistics for debugging
@@ -168,8 +268,9 @@ mod tests {
     #[test]
     fn test_grid_insertion() {
         let mut grid = SpatialGrid::new();
-        let e1 = Entity::from_bits(1);
-        grid.update_entity(e1, Vec2::ZERO, 10.0);
+        let e1 = Entity::from_raw_u32(1).expect("valid index");
+        grid.update_entity(e1, Vec2::ZERO, 10.0)
+            .expect("valid collider");
 
         let entities = grid.query_circle(Vec2::ZERO, 10.0);
         assert!(entities.contains(&e1));
@@ -178,11 +279,13 @@ mod tests {
     #[test]
     fn test_grid_spatial_separation() {
         let mut grid = SpatialGrid::new();
-        let e1 = Entity::from_bits(1);
-        let e2 = Entity::from_bits(2);
+        let e1 = Entity::from_raw_u32(1).expect("valid index");
+        let e2 = Entity::from_raw_u32(2).expect("valid index");
 
-        grid.update_entity(e1, Vec2::ZERO, 10.0);
-        grid.update_entity(e2, Vec2::new(200.0, 0.0), 10.0);
+        grid.update_entity(e1, Vec2::ZERO, 10.0)
+            .expect("valid collider");
+        grid.update_entity(e2, Vec2::new(200.0, 0.0), 10.0)
+            .expect("valid collider");
 
         let near_e1 = grid.query_circle(Vec2::ZERO, 10.0);
         assert!(near_e1.contains(&e1));

@@ -13,7 +13,10 @@ pub struct Layer {
 
 impl Layer {
     pub fn new(layer: u8, z_index: u32) -> Self {
-        Self { layer: layer.min(10), z_index }
+        Self {
+            layer: layer.min(10),
+            z_index,
+        }
     }
 
     pub const BACKGROUND: u8 = 0;
@@ -25,36 +28,60 @@ impl Layer {
     pub const UI: u8 = 10;
 
     pub fn background() -> Self {
-        Self { layer: Self::BACKGROUND, z_index: 0 }
+        Self {
+            layer: Self::BACKGROUND,
+            z_index: 0,
+        }
     }
 
     pub fn ground() -> Self {
-        Self { layer: Self::GROUND, z_index: 0 }
+        Self {
+            layer: Self::GROUND,
+            z_index: 0,
+        }
     }
 
     pub fn enemies(z_index: u32) -> Self {
-        Self { layer: Self::ENEMIES, z_index }
+        Self {
+            layer: Self::ENEMIES,
+            z_index,
+        }
     }
 
     pub fn player() -> Self {
-        Self { layer: Self::PLAYER, z_index: 0 }
+        Self {
+            layer: Self::PLAYER,
+            z_index: 0,
+        }
     }
 
     pub fn projectiles() -> Self {
-        Self { layer: Self::PROJECTILES, z_index: 0 }
+        Self {
+            layer: Self::PROJECTILES,
+            z_index: 0,
+        }
     }
 
     pub fn effects() -> Self {
-        Self { layer: Self::EFFECTS, z_index: 0 }
+        Self {
+            layer: Self::EFFECTS,
+            z_index: 0,
+        }
     }
 
     pub fn ui() -> Self {
-        Self { layer: Self::UI, z_index: 0 }
+        Self {
+            layer: Self::UI,
+            z_index: 0,
+        }
     }
 }
 
 impl Default for Layer {
     fn default() -> Self {
-        Self { layer: 1, z_index: 0 }
+        Self {
+            layer: 1,
+            z_index: 0,
+        }
     }
 }

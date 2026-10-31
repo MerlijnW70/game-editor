@@ -1,7 +1,8 @@
-use crate::components::{
-    Disabled, Health, Layer, Lifetime, Sprite, Team, Transform2D, Velocity,
+use crate::components::{Disabled, Health, Layer, Lifetime, Sprite, Team, Transform2D, Velocity};
+use crate::resources::{
+    prefab::{EntityType, SpawnedFromPrefab},
+    PrefabLibrary,
 };
-use crate::resources::{PrefabLibrary, prefab::{EntityType, SpawnedFromPrefab}};
 use crate::resources::{PoolManager, PoolType};
 use bevy::prelude::*;
 
@@ -35,7 +36,10 @@ pub fn spawn_from_prefab(
             scale: Vec2::new(template.transform.scale.0, template.transform.scale.1),
         },
         Layer::new(template.visual.layer as u8, 0),
-        Sprite::new("assets/sprites/default.png", Vec2::splat(template.visual.size)),
+        Sprite::new(
+            "assets/sprites/default.png",
+            Vec2::splat(template.visual.size),
+        ),
         Team::Neutral,
         SpawnedFromPrefab {
             template_name: prefab_name.to_string(),
@@ -53,7 +57,9 @@ pub fn spawn_from_prefab(
             commands.entity(entity).insert(crate::components::Enemy);
         }
         EntityType::Projectile => {
-            commands.entity(entity).insert(crate::components::Projectile);
+            commands
+                .entity(entity)
+                .insert(crate::components::Projectile);
         }
         EntityType::Effect => {
             // Effects don't need special marker

@@ -11,13 +11,10 @@ use bevy::prelude::*;
 use bevy::window::Window;
 use survivors_engine::archetypes::player_bundle;
 use survivors_engine::bench::run_frames;
+use survivors_engine::components::Sprite;
 use survivors_engine::components::*;
-use survivors_engine::{CoreEcsPlugin, RenderingPlugin, systems::spawn_camera};
-
-#[derive(Resource, Default)]
-struct DemoStats {
-    sprites_rendered: usize,
-}
+use survivors_engine::systems::RenderMetrics;
+use survivors_engine::{systems::spawn_camera, CoreEcsPlugin, RenderingPlugin};
 
 /// Generate a simple colored sprite (in real game this would be asset loading)
 fn create_sprite_entity(
@@ -48,20 +45,12 @@ fn demo_movement(
         // Circular movement pattern
         let angle = std::f32::consts::TAU * (time.elapsed_secs() / 10.0);
         let radius = 200.0;
-        transform.position = Vec2::new(
-            angle.cos() * radius,
-            angle.sin() * radius,
-        );
+        transform.position = Vec2::new(angle.cos() * radius, angle.sin() * radius);
     }
 }
 
 /// Log rendering metrics
-fn print_metrics(
-    metrics: Res<RenderMetrics>,
-    mut last_print: Local<f32>,
-    time: Res<Time>,
-    query: Query<&Sprite>,
-) {
+fn print_metrics(metrics: Res<RenderMetrics>, mut last_print: Local<f32>, time: Res<Time>) {
     *last_print += time.delta_secs();
     if *last_print >= 1.0 {
         *last_print = 0.0;
@@ -74,7 +63,7 @@ fn print_metrics(
 
 fn setup(mut commands: Commands) {
     // Create player
-    let player = commands.spawn(player_bundle(Vec2::ZERO)).id();
+    commands.spawn(player_bundle(Vec2::ZERO));
 
     // Create camera following player
     spawn_camera(&mut commands, Vec2::ZERO);
@@ -110,7 +99,7 @@ fn main() {
     app.add_plugins((
         DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: (1280.0, 720.0).into(),
+                resolution: (1280u32, 720u32).into(),
                 title: "Rendering Demo - 100 Sprites".to_string(),
                 ..default()
             }),
@@ -121,12 +110,8 @@ fn main() {
         CoreEcsPlugin,
         RenderingPlugin,
     ))
-    .init_resource::<DemoStats>()
     .add_systems(Startup, setup)
-    .add_systems(
-        Update,
-        (demo_movement, print_metrics),
-    );
+    .add_systems(Update, (demo_movement, print_metrics));
 
     let (frames, fps) = match frames_arg {
         Some(n) => (n, None),
@@ -153,6 +138,9 @@ fn main() {
     if metrics.total_sprites >= 100 {
         println!("PASS: Rendered {} sprites", metrics.total_sprites);
     } else {
-        println!("FAIL: Only rendered {} sprites (expected 100+)", metrics.total_sprites);
+        println!(
+            "FAIL: Only rendered {} sprites (expected 100+)",
+            metrics.total_sprites
+        );
     }
 }

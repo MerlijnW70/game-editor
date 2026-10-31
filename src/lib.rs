@@ -20,7 +20,7 @@ pub mod rendering;
 pub mod resources;
 pub mod systems;
 
-pub use plugin::{CoreEcsPlugin, CoreSet, RenderingPlugin, RenderSet};
 pub use collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};
-pub use rendering::{GpuBatchConfig, SpriteInstance, BatchingStats};
+pub use plugin::{CoreEcsPlugin, CoreSet, RenderSet, RenderingPlugin};
+pub use rendering::{BatchingStats, GpuBatchConfig, SpriteInstance};
 pub use resources::{PoolManager, PoolType};

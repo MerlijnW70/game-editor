@@ -6,10 +6,10 @@ use bevy::prelude::*;
 #[derive(Resource, Debug, Clone)]
 pub struct GameState {
     pub current_wave: u32,
-    pub wave_progress: f32,     // 0.0 to 1.0, time through current wave
-    pub wave_duration: f32,     // seconds per wave (decreases with difficulty)
-    pub score: u32,             // enemies killed
-    pub time_survived: f32,     // total time played in seconds
+    pub wave_progress: f32,         // 0.0 to 1.0, time through current wave
+    pub wave_duration: f32,         // seconds per wave (decreases with difficulty)
+    pub score: u32,                 // enemies killed
+    pub time_survived: f32,         // total time played in seconds
     pub max_consecutive_kills: u32, // combo multiplier
     pub current_kill_streak: u32,   // current combo counter
     pub difficulty_multiplier: f32, // scales with wave
@@ -138,9 +138,13 @@ pub fn update_game_state(
         }
     }
 
-    // Break streak if player takes damage
-    let damage_events_count: usize = damage_events.read().count();
-    if damage_events_count > 0 {
+    // Break the streak only when a player actually takes damage; projectiles
+    // hitting enemies are damage events too and must not reset it.
+    let mut player_was_hit = false;
+    for event in damage_events.read() {
+        player_was_hit |= event.amount > 0.0 && player_health.contains(event.target);
+    }
+    if player_was_hit {
         state.break_streak();
     }
 

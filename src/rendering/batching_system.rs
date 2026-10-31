@@ -181,6 +181,17 @@ mod tests {
     }
 
     #[test]
+    fn test_batching_metrics_reset() {
+        let mut metrics = BatchingMetrics::default();
+        metrics.total_sprites = 100;
+        metrics.total_batches = 5;
+
+        metrics.reset();
+        assert_eq!(metrics.total_sprites, 0);
+        assert_eq!(metrics.total_batches, 0);
+    }
+
+    #[test]
     fn test_metrics_efficiency() {
         let mut metrics = BatchingMetrics::default();
         metrics.total_sprites = 100;
@@ -192,8 +203,7 @@ mod tests {
 
     #[test]
     fn test_batching_strategy() {
-        let system = BatchingSystem::new(256)
-            .with_strategy(BatchingStrategy::ByLayer);
+        let system = BatchingSystem::new(256).with_strategy(BatchingStrategy::ByLayer);
 
         assert_eq!(system.strategy, BatchingStrategy::ByLayer);
     }

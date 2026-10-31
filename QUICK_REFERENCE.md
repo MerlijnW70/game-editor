@@ -123,61 +123,26 @@ solive_wallet_balance
 
 ---
 
-## 📤 Post Phase 2 Jobs
+## 📤 Post Jobs (any phase)
+
+Generate the commands — never hand-write a hash or URL. The generator hashes the spec as
+committed on `origin/main`, pins the URL to that commit, reads the amount from the spec, and
+refuses jobs whose `Depends On` jobs are not approved yet:
 
 ```bash
-# Job 5: HashSet Dedup
-solive_wallet_escrow \
-  --spec_url https://raw.githubusercontent.com/.../SOLIVE_JOB_AUDIT_FIX_05.md \
-  --spec_hash <HASH_HERE> \
-  --amount 0.06 \
-  --attestor 2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm
-
-# Job 6: Pool Reset
-solive_wallet_escrow \
-  --spec_url https://raw.githubusercontent.com/.../SOLIVE_JOB_AUDIT_FIX_06.md \
-  --spec_hash <HASH_HERE> \
-  --amount 0.06 \
-  --attestor 2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm
-
-# Job 7: Batch Validation
-solive_wallet_escrow \
-  --spec_url https://raw.githubusercontent.com/.../SOLIVE_JOB_AUDIT_FIX_07.md \
-  --spec_hash <HASH_HERE> \
-  --amount 0.07 \
-  --attestor 2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm
+# --approved: jobs already approved AND merged to main
+bash scripts/solive_post_commands.sh \
+  --attestor 2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm \
+  --approved 1,2,3,4 \
+  phase2
 ```
 
-**Prerequisite:** Phase 1 complete (all 4 jobs approved)
+Run the printed `solive_wallet_escrow` commands in the session that has the SOLIVE tools.
 
----
+Selectors: a job number (`8`), a range (`5-7`), or a phase (`phase3`); combine freely.
+The command prints the job table and the exact total escrow before you post anything.
 
-## 📤 Post Phase 3 Jobs
-
-```bash
-# Job 8: Custom Error Types
-solive_wallet_escrow \
-  --spec_url https://raw.githubusercontent.com/.../SOLIVE_JOB_AUDIT_FIX_08.md \
-  --spec_hash <HASH_HERE> \
-  --amount 0.08 \
-  --attestor 2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm
-
-# Job 9: Config Framework
-solive_wallet_escrow \
-  --spec_url https://raw.githubusercontent.com/.../SOLIVE_JOB_AUDIT_FIX_09.md \
-  --spec_hash <HASH_HERE> \
-  --amount 0.10 \
-  --attestor 2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm
-
-# Job 10: Collision Filtering
-solive_wallet_escrow \
-  --spec_url https://raw.githubusercontent.com/.../SOLIVE_JOB_AUDIT_FIX_10.md \
-  --spec_hash <HASH_HERE> \
-  --amount 0.12 \
-  --attestor 2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm
-```
-
-**Prerequisite:** Phase 2 complete (all 3 jobs approved)
+**Prerequisite:** every job's `Depends On` jobs approved and merged (the generator enforces it).
 
 ---
 
@@ -185,15 +150,14 @@ solive_wallet_escrow \
 
 **Wallet:** `2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm`
 
-**GitHub Repo:** (update with actual URL)
+**GitHub Repo:**
 ```
-https://github.com/user/game-editor
+https://github.com/MerlijnW70/game-editor
 ```
 
-**Spec Base URL:**
-```
-https://raw.githubusercontent.com/user/game-editor/main/
-```
+**Spec URLs:** pinned per commit by `scripts/solive_post_commands.sh`
+(`https://raw.githubusercontent.com/MerlijnW70/game-editor/<commit>/SOLIVE_JOB_AUDIT_FIX_NN.md`).
+Do not post `/main/` URLs: a later push would change the spec under the posted hash.
 
 ---
 

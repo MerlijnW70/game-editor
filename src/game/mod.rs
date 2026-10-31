@@ -6,8 +6,8 @@ pub mod state;
 pub mod ui;
 pub mod waves;
 
-pub use state::{GameState, update_game_state};
 pub use input::input_system;
 pub use projectiles::{projectile_system, FireRateLimiter};
-pub use waves::wave_system;
+pub use state::{update_game_state, GameState};
 pub use ui::{ui_system, UiState};
+pub use waves::wave_system;
