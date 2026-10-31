@@ -3,7 +3,7 @@
 **Target Date:** November 1, 2026 (Day 3 PM - after Phase 1 approval)  
 **Budget:** 0.19 SOL  
 **Timeline:** 2-3 days for completion  
-**Effort:** 5 jobs | 12-15 hours total work
+**Effort:** 3 jobs | 6-9 hours total work
 
 ---
 
@@ -105,28 +105,26 @@ cargo test gpu_batch_limits
 ## 📋 Posting Checklist
 
 ```bash
-# Step 1: Verify all 3 job specs
-ls -la SOLIVE_JOB_AUDIT_FIX_0{5,6,7}.md
-# Should show 3 files, each 600-1000 lines
-
-# Step 2: Hash the specs
-solive_hash SOLIVE_JOB_AUDIT_FIX_05.md
-solive_hash SOLIVE_JOB_AUDIT_FIX_06.md
-solive_hash SOLIVE_JOB_AUDIT_FIX_07.md
-
-# Step 3: Check wallet balance (should have 0.51 SOL available after Phase 1)
+# Step 1: Check wallet balance (must cover the total the generator prints: 0.19 SOL)
 solive_wallet_balance
+```
 
-# Step 4: Post jobs
-solive_wallet_escrow \
-  --spec_url https://github.com/user/game-editor/blob/main/SOLIVE_JOB_AUDIT_FIX_05.md \
-  --spec_hash <HASH_FROM_STEP_2> \
-  --amount 0.06 \
-  --attestor 2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm
+Step 2: Generate the commands — never hand-write a hash or URL. The generator hashes the spec as
+committed on `origin/main`, pins the URL to that commit, reads the amount from the spec, and
+refuses jobs whose `Depends On` jobs are not approved yet:
 
-# Repeat for Job 6 (0.06 SOL) and Job 7 (0.07 SOL)
+```bash
+# --approved: jobs already approved AND merged to main
+bash scripts/solive_post_commands.sh \
+  --attestor 2atXgJgD7AdDiJK6rah7yq4HHJEQQxQCvcKcoxFWTyKm \
+  --approved 1,2,3,4 \
+  phase2
+```
 
-# Step 5: Verify posting
+Run the printed `solive_wallet_escrow` commands in the session that has the SOLIVE tools.
+
+```bash
+# Step 3: Verify posting
 solive_find_jobs --min_pay 0.05
 # Should see Phase 2 jobs in results
 ```
@@ -137,9 +135,9 @@ solive_find_jobs --min_pay 0.05
 
 | Job | Title | Budget | Effort | Files Modified |
 |-----|-------|--------|--------|-----------------|
-| 5 | HashSet Dedup | 0.06 | 2-3h | spatial_grid.rs |
-| 6 | Pool Reset | 0.06 | 2-3h | entity_pool.rs |
-| 7 | Batch Validation | 0.07 | 2-3h | rendering.rs, config.rs |
+| 5 | HashSet Dedup | 0.06 | 2-3h | src/collision/spatial.rs |
+| 6 | Pool Reset | 0.06 | 2-3h | src/pool.rs |
+| 7 | Batch Validation | 0.07 | 2-3h | src/rendering/gpu_batch.rs, src/resources/config.rs |
 
 **Total Phase 2:** 0.19 SOL | 6-9 hours
 
@@ -203,8 +201,7 @@ Nov 3, 3:00 PM - Phase 2 deliveries expected
 - [ ] Acceptance criteria are clear
 - [ ] Effort estimates are accurate
 - [ ] Wallet has sufficient balance (>0.19 SOL)
-- [ ] GitHub URLs are correct
-- [ ] Hashes can be computed
+- [ ] Spec fixes merged to `main` before generating commands
 
 ---
 
