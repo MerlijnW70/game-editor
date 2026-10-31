@@ -51,19 +51,3 @@ pub fn batching_input(
         );
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_batching_metrics_reset() {
-        let mut metrics = BatchingMetrics::default();
-        metrics.total_sprites = 100;
-        metrics.total_batches = 5;
-
-        metrics.reset();
-        assert_eq!(metrics.total_sprites, 0);
-        assert_eq!(metrics.total_batches, 0);
-    }
-}

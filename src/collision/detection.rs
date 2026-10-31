@@ -138,7 +138,7 @@ mod tests {
     }
 
     #[test]
-    fn test_circle_aabb_collision() {
+    fn circle_aabb_overlap_detected() {
         let contact = test_circle_aabb_collision(
             Vec2::ZERO,
             15.0,
@@ -149,7 +149,7 @@ mod tests {
     }
 
     #[test]
-    fn test_circle_aabb_no_collision() {
+    fn circle_aabb_separated_not_detected() {
         let contact = test_circle_aabb_collision(
             Vec2::ZERO,
             5.0,

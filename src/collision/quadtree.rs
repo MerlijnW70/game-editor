@@ -249,6 +249,10 @@ impl QuadtreeIndex {
 mod tests {
     use super::*;
 
+    fn entity(index: u32) -> Entity {
+        Entity::from_raw_u32(index).expect("test entity index is valid")
+    }
+
     #[test]
     fn test_aabb_contains_point() {
         let aabb = AABB::new(Vec2::new(0.0, 0.0), Vec2::new(10.0, 10.0));
@@ -268,8 +272,8 @@ mod tests {
         let bounds = AABB::new(Vec2::new(-100.0, -100.0), Vec2::new(100.0, 100.0));
         let mut tree = QuadtreeIndex::new(bounds);
 
-        let e1 = Entity::from_raw(1);
-        let e2 = Entity::from_raw(2);
+        let e1 = entity(1);
+        let e2 = entity(2);
 
         tree.update_entity(e1, Vec2::new(0.0, 0.0), 5.0);
         tree.update_entity(e2, Vec2::new(50.0, 50.0), 5.0);
@@ -284,7 +288,7 @@ mod tests {
         let bounds = AABB::new(Vec2::new(-100.0, -100.0), Vec2::new(100.0, 100.0));
         let mut tree = QuadtreeIndex::new(bounds);
 
-        let e1 = Entity::from_raw(1);
+        let e1 = entity(1);
         tree.update_entity(e1, Vec2::new(0.0, 0.0), 5.0);
 
         let results = tree.query_circle(Vec2::new(0.0, 0.0), 10.0);

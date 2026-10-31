@@ -7,48 +7,48 @@
 //! Without it, it runs 5s at 60 Hz.
 //!
 //! Features:
-//! - 100 dynamic entities moving randomly
+//! - N dynamic entities (default 100) on alternating teams, so hostile pairs collide
 //! - Spatial grid collision detection (< 0.5ms per frame)
 //! - Knockback and separation on collision
 //! - Frame timing breakdown
 
 use bevy::diagnostic::{DiagnosticsPlugin, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
-use survivors_engine::bench::{run_frames, BenchReport};
-use survivors_engine::collision::{ActiveSpatialGrid, CollisionConfig};
+use survivors_engine::bench::run_frames;
+use survivors_engine::collision::ActiveSpatialGrid;
 use survivors_engine::components::*;
 use survivors_engine::systems::CollisionDiagnostics;
 use survivors_engine::{CoreEcsPlugin, CoreSet};
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 struct CollisionStats {
     total_collisions: u64,
     collision_checks: u64,
     spawned: bool,
 }
 
-impl Default for CollisionStats {
-    fn default() -> Self {
-        Self {
-            total_collisions: 0,
-            collision_checks: 0,
-            spawned: false,
-        }
-    }
+/// Number of entities to spawn, from `--entities`.
+#[derive(Resource)]
+struct DemoConfig {
+    entities: usize,
 }
 
 /// Spawn N entities with random positions and velocities (once)
-fn spawn_test_entities(mut commands: Commands, mut stats: ResMut<CollisionStats>) {
+fn spawn_test_entities(
+    mut commands: Commands,
+    mut stats: ResMut<CollisionStats>,
+    config: Res<DemoConfig>,
+) {
     if stats.spawned {
         return;
     }
     stats.spawned = true;
 
-    const ENTITY_COUNT: usize = 100;
     const SPAWN_RADIUS: f32 = 400.0;
+    let entity_count = config.entities;
 
-    for i in 0..ENTITY_COUNT {
-        let angle = (i as f32 / ENTITY_COUNT as f32) * std::f32::consts::TAU;
+    for i in 0..entity_count {
+        let angle = (i as f32 / entity_count as f32) * std::f32::consts::TAU;
         let pos = Vec2::new(angle.cos() * SPAWN_RADIUS, angle.sin() * SPAWN_RADIUS);
 
         // Random velocity with slight rotation
@@ -59,13 +59,17 @@ fn spawn_test_entities(mut commands: Commands, mut stats: ResMut<CollisionStats>
             Transform2D::from_position(pos),
             Velocity(velocity),
             Collision::new(15.0, CollisionType::Enemy),
-            Team::Enemy,
+            // Alternate teams: only hostile pairs collide when team filtering is on.
+            if i % 2 == 0 {
+                Team::Player
+            } else {
+                Team::Enemy
+            },
             Health::new(100.0),
-            Sprite::default(),
         ));
     }
 
-    println!("Spawned {} test entities", ENTITY_COUNT);
+    println!("Spawned {} test entities", entity_count);
 }
 
 /// Update entity velocities with random walk (keeps them moving in different directions)
@@ -86,12 +90,7 @@ fn log_collision_stats(diagnostics: Res<CollisionDiagnostics>, mut stats: ResMut
 }
 
 /// Print final statistics
-fn print_frame_stats(
-    diagnostics: Res<CollisionDiagnostics>,
-    stats: Res<CollisionStats>,
-    time: Res<Time>,
-    query: Query<&Velocity>,
-) {
+fn print_frame_stats(diagnostics: Res<CollisionDiagnostics>) {
     let total_collision_time = diagnostics.spatial_update_us
         + diagnostics.broad_phase_us
         + diagnostics.narrow_phase_us
@@ -119,13 +118,13 @@ fn main() {
             .find(|w| w[0] == name)
             .and_then(|w| w[1].parse::<u32>().ok())
     };
-    let _entities = arg("--entities").unwrap_or(100);
+    let entities = arg("--entities").unwrap_or(100) as usize;
     let frames_arg = arg("--frames");
 
     println!(
         "Collision Demo: {} entities, {} frames",
-        100,
-        frames_arg.unwrap_or(0)
+        entities,
+        frames_arg.unwrap_or(300)
     );
 
     let mut app = App::new();
@@ -136,6 +135,7 @@ fn main() {
         CoreEcsPlugin,
     ))
     .init_resource::<CollisionStats>()
+    .insert_resource(DemoConfig { entities })
     .add_systems(
         Update,
         (

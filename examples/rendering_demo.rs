@@ -11,13 +11,10 @@ use bevy::prelude::*;
 use bevy::window::Window;
 use survivors_engine::archetypes::player_bundle;
 use survivors_engine::bench::run_frames;
+use survivors_engine::components::Sprite;
 use survivors_engine::components::*;
+use survivors_engine::systems::RenderMetrics;
 use survivors_engine::{systems::spawn_camera, CoreEcsPlugin, RenderingPlugin};
-
-#[derive(Resource, Default)]
-struct DemoStats {
-    sprites_rendered: usize,
-}
 
 /// Generate a simple colored sprite (in real game this would be asset loading)
 fn create_sprite_entity(
@@ -53,12 +50,7 @@ fn demo_movement(
 }
 
 /// Log rendering metrics
-fn print_metrics(
-    metrics: Res<RenderMetrics>,
-    mut last_print: Local<f32>,
-    time: Res<Time>,
-    query: Query<&Sprite>,
-) {
+fn print_metrics(metrics: Res<RenderMetrics>, mut last_print: Local<f32>, time: Res<Time>) {
     *last_print += time.delta_secs();
     if *last_print >= 1.0 {
         *last_print = 0.0;
@@ -71,7 +63,7 @@ fn print_metrics(
 
 fn setup(mut commands: Commands) {
     // Create player
-    let player = commands.spawn(player_bundle(Vec2::ZERO)).id();
+    commands.spawn(player_bundle(Vec2::ZERO));
 
     // Create camera following player
     spawn_camera(&mut commands, Vec2::ZERO);
@@ -107,7 +99,7 @@ fn main() {
     app.add_plugins((
         DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: (1280.0, 720.0).into(),
+                resolution: (1280u32, 720u32).into(),
                 title: "Rendering Demo - 100 Sprites".to_string(),
                 ..default()
             }),
@@ -118,7 +110,6 @@ fn main() {
         CoreEcsPlugin,
         RenderingPlugin,
     ))
-    .init_resource::<DemoStats>()
     .add_systems(Startup, setup)
     .add_systems(Update, (demo_movement, print_metrics));
 

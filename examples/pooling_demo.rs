@@ -11,7 +11,7 @@
 use bevy::prelude::*;
 use std::time::Instant;
 use survivors_engine::{
-    components::{Disabled, Health, Transform2D, Velocity},
+    components::{Disabled, Health, Velocity},
     resources::{PoolManager, PoolType},
 };
 
@@ -38,7 +38,7 @@ struct PoolingDemo {
     phase: PoolingPhase,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum PoolingPhase {
     Spawning,   // Spawn entities from pool
     Running,    // Simulate gameplay

@@ -3,14 +3,17 @@
 use bevy::prelude::*;
 use survivors_engine::collision::*;
 use survivors_engine::components::*;
-use survivors_engine::systems::collision as collision_systems;
-use survivors_engine::{CoreEcsPlugin, CoreSet};
+use survivors_engine::CoreEcsPlugin;
+
+fn entity(index: u32) -> Entity {
+    Entity::from_raw_u32(index).expect("test entity index is valid")
+}
 
 #[test]
 fn test_spatial_grid_basic() {
     let mut grid = spatial::SpatialGrid::new();
-    let e1 = Entity::from_raw(1);
-    let e2 = Entity::from_raw(2);
+    let e1 = entity(1);
+    let e2 = entity(2);
 
     // Insert entities at different positions
     grid.update_entity(e1, Vec2::ZERO, 10.0);
@@ -57,7 +60,6 @@ fn test_collision_in_ecs() {
             Collision::new(10.0, CollisionType::Player),
             Team::Player,
             Health::new(100.0),
-            Sprite::default(),
         ))
         .id();
 
@@ -69,7 +71,6 @@ fn test_collision_in_ecs() {
             Collision::new(10.0, CollisionType::Enemy),
             Team::Enemy,
             Health::new(100.0),
-            Sprite::default(),
         ))
         .id();
 
