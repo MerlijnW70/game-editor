@@ -1,7 +1,8 @@
 use crate::collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};
+use crate::debug::DebugProfiler;
 use crate::events::{ContactEvent, DamageEvent, DeathEvent};
 use crate::resources::PrefabLibrary;
-use crate::systems::{camera, config, contact, despawn, health, movement, pooling, prefab_spawn, rendering, spawning, collision};
+use crate::systems::{camera, config, contact, despawn, health, movement, pooling, prefab_spawn, profiler_system, rendering, spawning, collision};
 use bevy::prelude::*;
 
 /// Ordered phases of the core simulation, so other plugins can schedule
@@ -39,8 +40,9 @@ impl Plugin for CoreEcsPlugin {
             .init_resource::<CollisionConfig>()
             .init_resource::<collision::CollisionDiagnostics>()
             .init_resource::<PrefabLibrary>()
+            .init_resource::<DebugProfiler>()
             .add_systems(Startup, (config::load_config, prefab_spawn::load_prefabs))
-            .add_systems(Update, config::apply_config)
+            .add_systems(Update, (config::apply_config, profiler_system::profiler_input))
             .configure_sets(
                 Update,
                 (
@@ -79,6 +81,8 @@ impl Plugin for CoreEcsPlugin {
                         .chain()
                         .in_set(CoreSet::Cleanup),
                     pooling::log_pool_stats.in_set(CoreSet::Cleanup),
+                    profiler_system::collect_profiler_metrics.after(CoreSet::Cleanup),
+                    profiler_system::log_profiler_summary.after(CoreSet::Cleanup),
                 ),
             );
     }

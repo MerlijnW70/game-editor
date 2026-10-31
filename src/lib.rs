@@ -12,6 +12,7 @@ pub mod archetypes;
 pub mod bench;
 pub mod collision;
 pub mod components;
+pub mod debug;
 pub mod events;
 pub mod game;
 pub mod plugin;
