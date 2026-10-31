@@ -23,8 +23,8 @@ impl Default for FireRateLimiter {
 /// System to handle projectile spawning on player input.
 pub fn projectile_system(
     mut commands: Commands,
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mouse: Res<ButtonInput<MouseButton>>,
+    keyboard: Option<Res<ButtonInput<KeyCode>>>,
+    mouse: Option<Res<ButtonInput<MouseButton>>>,
     mut fire_rate: ResMut<FireRateLimiter>,
     player_query: Query<&crate::components::Transform2D, With<Player>>,
     time: Res<Time>,
@@ -37,7 +37,8 @@ pub fn projectile_system(
     }
 
     // Check for fire input
-    let should_fire = keyboard.pressed(KeyCode::Space) || mouse.pressed(MouseButton::Left);
+    let should_fire = (keyboard.as_ref().map_or(false, |k| k.pressed(KeyCode::Space)))
+        || (mouse.as_ref().map_or(false, |m| m.pressed(MouseButton::Left)));
 
     if !should_fire {
         return;

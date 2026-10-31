@@ -11,6 +11,7 @@
 //!   Spacebar or Left Mouse - Shoot projectiles
 
 use bevy::diagnostic::{DiagnosticsPlugin, FrameTimeDiagnosticsPlugin};
+use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use survivors_engine::archetypes::player_bundle;
 use survivors_engine::bench::run_frames;
@@ -36,6 +37,7 @@ fn main() {
     let mut app = App::new();
     app.add_plugins((
         MinimalPlugins,
+        InputPlugin,
         DiagnosticsPlugin,
         FrameTimeDiagnosticsPlugin::default(),
         CoreEcsPlugin,
