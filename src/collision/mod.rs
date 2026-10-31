@@ -1,18 +1,23 @@
 //! Collision detection and response system.
 //!
-//! - `spatial`: Grid-based spatial partitioning for efficient queries
+//! - `spatial`: Grid-based spatial partitioning for efficient queries (O(n) worst-case)
+//! - `quadtree`: Quadtree-based spatial partitioning (O(log n) queries, dynamic subdivision)
 //! - `detection`: Broad/narrow phase collision detection
 //! - `response`: Collision response (knockback, separation)
 //!
 //! Integration: the collision worker uses this module and registers systems
 //! that update the spatial grid and handle collisions each frame.
+//!
+//! **Job #1 Note:** quadtree is a drop-in replacement for grid with better O(log n) performance.
 
 pub mod spatial;
+pub mod quadtree;
 pub mod detection;
 pub mod response;
 
 // Re-export main types
 pub use spatial::{SpatialGrid, SpatialGridStats};
+pub use quadtree::{QuadtreeIndex, AABB};
 pub use detection::{ContactInfo, CollisionPair, test_circle_collision, test_circle_aabb_collision};
 pub use response::{KnockbackConfig, CollisionResponse};
 
