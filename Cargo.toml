@@ -1,0 +1,33 @@
+[package]
+name = "survivors_engine"
+version = "0.1.0"
+edition = "2024"
+description = "Vampire Survivors-style 2D game engine: core ECS and entity management"
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "survivors_engine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "survivors_engine"
+path = "src/main.rs"
+
+[dependencies]
+# Headless-friendly: no windowing/rendering features yet. Rendering and
+# camera workers add the features they need.
+bevy = { version = "0.20.1", default-features = false }
+
+[[example]]
+name = "ecs_demo"
+path = "examples/ecs_demo.rs"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
