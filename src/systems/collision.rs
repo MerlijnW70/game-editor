@@ -36,14 +36,16 @@ pub struct CollisionDiagnostics {
 /// Update the spatial grid with current entity positions and collision radii
 pub fn update_spatial_grid(
     mut spatial: ResMut<ActiveSpatialGrid>,
-    query: Query<(Entity, &Transform2D, &Collision), Changed<Transform2D>>,
+    query: Query<(Entity, &Transform2D, &Collision, &crate::components::Health), Changed<Transform2D>>,
     mut diagnostics: ResMut<CollisionDiagnostics>,
 ) {
     let start = std::time::Instant::now();
 
-    // Update moved entities
-    for (entity, transform, collision) in &query {
-        spatial.0.update_entity(entity, transform.position, collision.radius);
+    // Update moved entities (skip dead ones)
+    for (entity, transform, collision, health) in &query {
+        if !health.is_dead() {
+            spatial.0.update_entity(entity, transform.position, collision.radius);
+        }
     }
 
     diagnostics.spatial_update_us = start.elapsed().as_micros() as u32;
@@ -66,6 +68,11 @@ fn broad_phase_collisions(
         for entity_b in nearby {
             if entity_a >= entity_b {
                 continue; // Skip self and reverse duplicates
+            }
+
+            // Check if entity_b is still valid in the world
+            if !entities.contains(entity_b) {
+                continue; // Skip dead entities
             }
 
             let pair = CollisionPair::new(entity_a, entity_b);

@@ -58,6 +58,8 @@ impl Plugin for CoreEcsPlugin {
                     (movement::apply_player_input, movement::enemy_chase).in_set(CoreSet::Ai),
                     movement::movement.in_set(CoreSet::Movement),
                     (
+                        // Cleanup spatial grid first to remove stale references
+                        collision::cleanup_spatial_grid_on_despawn,
                         collision::update_spatial_grid,
                         collision::detect_collisions,
                         collision::apply_collision_response,
@@ -69,7 +71,7 @@ impl Plugin for CoreEcsPlugin {
                     (health::apply_damage, health::mark_dead_sprites)
                         .chain()
                         .in_set(CoreSet::Health),
-                    (despawn::tick_lifetimes, despawn::despawn_dead, collision::cleanup_spatial_grid_on_despawn)
+                    (despawn::tick_lifetimes, despawn::despawn_dead)
                         .chain()
                         .in_set(CoreSet::Cleanup),
                 ),
