@@ -297,7 +297,11 @@ fn config_validation_app_with_invalid_config_uses_defaults() {
     assert_eq!(app.world().resource::<GameConfig>(), &GameConfig::default());
     let defaults = GameConfig::default();
     assert_eq!(
-        app.world().resource::<PoolManager>().stats().enemies_total,
+        app.world()
+            .resource::<PoolManager>()
+            .stats()
+            .enemies
+            .capacity,
         defaults.pools.max_enemies
     );
 }

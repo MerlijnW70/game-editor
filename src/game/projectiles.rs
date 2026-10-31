@@ -1,72 +1,93 @@
 //! Projectile spawning system: spacebar or mouse click to shoot.
 
 use crate::archetypes::projectile_bundle;
-use crate::components::{Player, Team};
+use crate::components::{Disabled, Player, Team, Transform2D};
+use crate::resources::{PoolManager, PoolType};
 use bevy::prelude::*;
 
-/// Resource to track when player last shot (for fire rate limiting).
-#[derive(Resource)]
+/// Fire-rate limiting for the player's weapon.
+#[derive(Resource, Debug, Clone, PartialEq)]
 pub struct FireRateLimiter {
+    /// Seconds since the last shot. Starts at infinity so the first shot is
+    /// allowed immediately. (It used to start at `NEG_INFINITY`, which stays
+    /// negative forever once frame times are added: the player could never
+    /// fire.)
     pub last_shot: f32,
+    /// Minimum seconds between shots.
     pub cooldown: f32,
 }
 
 impl Default for FireRateLimiter {
     fn default() -> Self {
         Self {
-            last_shot: f32::NEG_INFINITY, // Allow first shot immediately
-            cooldown: 0.1,                // 0.1 second cooldown between shots
+            last_shot: f32::INFINITY,
+            cooldown: 0.1,
         }
     }
 }
 
-/// System to handle projectile spawning on player input.
+impl FireRateLimiter {
+    /// Advances the clock by `dt` seconds and reports whether the weapon is ready.
+    pub fn tick(&mut self, dt: f32) -> bool {
+        self.last_shot += dt;
+        self.last_shot >= self.cooldown
+    }
+}
+
+/// Speed of a player projectile (world units per second).
+pub const PROJECTILE_SPEED: f32 = 400.0;
+/// Damage dealt by a player projectile.
+pub const PROJECTILE_DAMAGE: f32 = 10.0;
+/// Seconds before an unspent projectile expires.
+pub const PROJECTILE_LIFETIME: f32 = 3.0;
+
+/// Spawns a player projectile while fire input (Space or left mouse) is held
+/// and the cooldown has elapsed.
+///
+/// Expired projectiles are pooled by `despawn_dead`; a pooled one is reused
+/// first and receives a complete fresh `projectile_bundle`.
 pub fn projectile_system(
     mut commands: Commands,
     keyboard: Option<Res<ButtonInput<KeyCode>>>,
     mouse: Option<Res<ButtonInput<MouseButton>>>,
     mut fire_rate: ResMut<FireRateLimiter>,
-    player_query: Query<&crate::components::Transform2D, With<Player>>,
+    mut pool: ResMut<PoolManager>,
+    player_query: Query<&Transform2D, With<Player>>,
     time: Res<Time>,
 ) {
-    // Update cooldown
-    fire_rate.last_shot += time.delta_secs();
-
-    if fire_rate.last_shot < fire_rate.cooldown {
+    if !fire_rate.tick(time.delta_secs()) {
         return;
     }
 
-    // Check for fire input
-    let should_fire = (keyboard
-        .as_ref()
-        .map_or(false, |k| k.pressed(KeyCode::Space)))
-        || (mouse
-            .as_ref()
-            .map_or(false, |m| m.pressed(MouseButton::Left)));
-
+    let should_fire = keyboard.is_some_and(|k| k.pressed(KeyCode::Space))
+        || mouse.is_some_and(|m| m.pressed(MouseButton::Left));
     if !should_fire {
         return;
     }
 
-    // Get player position
-    let player_transform = match player_query.iter().next() {
-        Some(transform) => transform,
-        None => return,
+    let Some(player_transform) = player_query.iter().next() else {
+        return;
     };
 
-    // Reset cooldown
     fire_rate.last_shot = 0.0;
 
-    // Spawn projectile in direction player is facing
-    // For now, use a fixed direction (right). In a full game, we'd track player rotation.
-    let projectile_speed = 400.0;
-    let projectile_velocity = Vec2::new(projectile_speed, 0.0);
-
-    commands.spawn(projectile_bundle(
+    // Fixed direction (right) until the player tracks a facing direction.
+    let bundle = projectile_bundle(
         player_transform.position,
-        projectile_velocity,
-        10.0, // damage
-        3.0,  // lifetime in seconds
+        Vec2::new(PROJECTILE_SPEED, 0.0),
+        PROJECTILE_DAMAGE,
+        PROJECTILE_LIFETIME,
         Team::Player,
-    ));
+    );
+    match pool.acquire(PoolType::Projectile) {
+        Some(entity) => {
+            commands
+                .entity(entity)
+                .remove::<(Disabled, Visibility)>()
+                .insert(bundle);
+        }
+        None => {
+            commands.spawn(bundle);
+        }
+    }
 }

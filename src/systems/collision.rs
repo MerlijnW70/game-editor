@@ -32,6 +32,9 @@ pub struct CollisionDiagnostics {
     pub response_us: u32,
     pub collision_checks: u32,
     pub actual_collisions: u32,
+    /// Spatial-grid lookups made by the broad phase this frame (one per
+    /// active collider).
+    pub spatial_queries: u32,
     /// Colliders refused by the spatial grid this frame (non-finite position,
     /// invalid or oversized radius). They take no part in collisions.
     pub rejected_colliders: u32,
@@ -189,6 +192,8 @@ pub fn detect_collisions(
 
     diagnostics.broad_phase_us = broad_time;
     diagnostics.narrow_phase_us = narrow_time;
+    // The broad phase makes exactly one grid query per active collider.
+    diagnostics.spatial_queries = entities.iter().len() as u32;
     diagnostics.collision_checks = pairs.len() as u32;
     diagnostics.actual_collisions = collision_count;
 }

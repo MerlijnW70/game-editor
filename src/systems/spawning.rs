@@ -4,13 +4,10 @@ use crate::debug::LogThrottle;
 use crate::resources::{GameConfig, PoolManager, PoolType};
 use bevy::prelude::*;
 
-/// Keeps the enemy population at `target_count` by spawning in batches on a
-/// ring around the origin.
-///
-/// Pooling note: Bevy recycles entity indices (with generation bumps) and keeps
-/// components packed in archetype tables, so churn does not fragment memory and
-/// no manual pool is needed. Spawning goes through `spawn_batch`, which
-/// reserves table capacity once per batch.
+/// Keeps the enemy population at `target_count` by spawning on a ring around
+/// the origin. Dead enemies are pooled by `despawn_dead` and reused here
+/// first; new entities are created with `spawn_batch`, which reserves table
+/// capacity once per batch.
 #[derive(Resource, Debug, Clone)]
 pub struct EnemySpawner {
     pub target_count: usize,

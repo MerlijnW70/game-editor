@@ -57,15 +57,15 @@ fn setup_pool(mut pool: ResMut<PoolManager>, mut commands: Commands) {
     let stats = pool.stats();
     println!(
         "  Enemies: {}/{} available",
-        stats.enemies_available, stats.enemies_total
+        stats.enemies.available, stats.enemies.capacity
     );
     println!(
         "  Projectiles: {}/{} available",
-        stats.projectiles_available, stats.projectiles_total
+        stats.projectiles.available, stats.projectiles.capacity
     );
     println!(
         "  Effects: {}/{} available",
-        stats.effects_available, stats.effects_total
+        stats.effects.available, stats.effects.capacity
     );
     println!();
 }
@@ -148,7 +148,7 @@ fn report_stats(
 
     println!(
         "Time {:.1}s | Phase: {:?} | Active: {} | Pool: {}/{} available",
-        elapsed, demo.phase, active, stats.projectiles_available, stats.projectiles_total
+        elapsed, demo.phase, active, stats.projectiles.available, stats.projectiles.capacity
     );
 
     // Transition phases
@@ -166,12 +166,12 @@ fn report_stats(
                 println!("Despawn complete. Demo finished!");
                 println!("\n=== Final Stats ===");
                 println!(
-                    "Total projectiles acquired: {}",
-                    pool.total_acquired_projectiles
+                    "Projectiles acquired from pool: {} (empty-pool misses: {})",
+                    stats.projectiles.hits, stats.projectiles.misses
                 );
                 println!(
                     "Pool efficiency: {} acquisitions with {} pre-allocated entities",
-                    pool.total_acquired_projectiles, stats.projectiles_total
+                    stats.projectiles.hits, stats.projectiles.capacity
                 );
                 println!("Allocations after initialization: 0 (pool-based)");
                 demo.phase = PoolingPhase::Completed;

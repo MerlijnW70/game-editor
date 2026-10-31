@@ -1,13 +1,21 @@
+use crate::components::Disabled;
 use crate::debug::{DebugProfiler, FrameMetrics};
 use crate::resources::PoolManager;
+use crate::systems::collision::CollisionDiagnostics;
 use bevy::prelude::*;
 
-/// Collect frame metrics and update profiler
+/// Collect frame metrics and update profiler.
+///
+/// Entity counts use archetype-level query lengths (`iter().len()` over
+/// `With`/`Without` filters), which sum table sizes instead of visiting every
+/// entity, so collecting metrics stays cheap at 8K+ entities.
 pub fn collect_profiler_metrics(
     mut profiler: ResMut<DebugProfiler>,
     time: Res<Time>,
     pool: Res<PoolManager>,
+    collisions: Res<CollisionDiagnostics>,
     all_entities: Query<()>,
+    active_entities: Query<(), Without<Disabled>>,
 ) {
     if !profiler.enabled {
         return;
@@ -25,13 +33,13 @@ pub fn collect_profiler_metrics(
         frame_number: profiler.current_frame.frame_number + 1,
         delta_time_ms: delta_time * 1000.0,
         fps,
-        total_entities: all_entities.iter().count(),
-        active_entities: all_entities.iter().count(), // Simplified: would need Disabled query
-        pool_enemies_in_use: pool_stats.enemies_in_use(),
-        pool_projectiles_in_use: pool_stats.projectiles_in_use(),
-        pool_effects_in_use: pool_stats.effects_in_use(),
-        spatial_queries_per_frame: 0, // Would be updated by collision system
-        collisions_detected: 0,       // Would be updated by collision system
+        total_entities: all_entities.iter().len(),
+        active_entities: active_entities.iter().len(),
+        pool_enemies_available: pool_stats.enemies.available,
+        pool_projectiles_available: pool_stats.projectiles.available,
+        pool_effects_available: pool_stats.effects.available,
+        spatial_queries_per_frame: collisions.spatial_queries as usize,
+        collisions_detected: collisions.actual_collisions as usize,
     };
 
     profiler.record_frame(metrics);
