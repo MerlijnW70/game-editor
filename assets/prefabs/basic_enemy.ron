@@ -1,0 +1,20 @@
+(
+    name: "basic_enemy",
+    entity_type: Enemy,
+    transform: (
+        position: (0.0, 0.0),
+        rotation: 0.0,
+        scale: (1.0, 1.0),
+    ),
+    visual: (
+        size: 10.0,
+        layer: 1,
+        color: (1.0, 0.0, 0.0, 1.0),
+    ),
+    gameplay: (
+        health: 30.0,
+        speed: 60.0,
+        radius: 10.0,
+        lifetime: None,
+    ),
+)

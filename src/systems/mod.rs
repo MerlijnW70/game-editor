@@ -9,6 +9,7 @@ pub mod despawn;
 pub mod health;
 pub mod movement;
 pub mod pooling;
+pub mod prefab_spawn;
 pub mod rendering;
 pub mod spawning;
 
@@ -18,3 +19,4 @@ pub use camera::spawn_camera;
 pub use collision::CollisionDiagnostics;
 pub use pooling::{pool_maintenance, log_pool_stats};
 pub use config::{load_config, apply_config};
+pub use prefab_spawn::{spawn_from_prefab, load_prefabs};
