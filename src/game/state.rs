@@ -138,9 +138,13 @@ pub fn update_game_state(
         }
     }
 
-    // Break streak if player takes damage
-    let damage_events_count: usize = damage_events.read().count();
-    if damage_events_count > 0 {
+    // Break the streak only when a player actually takes damage; projectiles
+    // hitting enemies are damage events too and must not reset it.
+    let mut player_was_hit = false;
+    for event in damage_events.read() {
+        player_was_hit |= event.amount > 0.0 && player_health.contains(event.target);
+    }
+    if player_was_hit {
         state.break_streak();
     }
 

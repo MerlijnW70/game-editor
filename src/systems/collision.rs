@@ -92,13 +92,13 @@ fn broad_phase_collisions(
 
 /// Narrow phase: test circle-circle collisions for broad phase pairs
 fn narrow_phase_collisions(
-    pairs: Vec<CollisionPair>,
+    pairs: &[CollisionPair],
     entities: &Query<(Entity, &Transform2D, &Collision, &Team), Without<Disabled>>,
     config: &CollisionConfig,
 ) -> Vec<ContactInfo> {
     let mut contacts = Vec::new();
 
-    for pair in pairs.into_iter().take(config.max_collisions_per_frame) {
+    for pair in pairs.iter().take(config.max_collisions_per_frame) {
         // Get both entities' data
         let Ok((_, transform_a, collision_a, team_a)) = entities.get(pair.a) else {
             continue;
@@ -112,15 +112,15 @@ fn narrow_phase_collisions(
             continue;
         }
 
-        // Test circle-circle collision
-        if let Some(mut contact) = test_circle_collision(
+        // Test circle-circle collision; the contact carries both entities.
+        if let Some(contact) = test_circle_collision(
+            pair.a,
             transform_a.position,
             collision_a.radius,
+            pair.b,
             transform_b.position,
             collision_b.radius,
         ) {
-            contact.entity_a = pair.a;
-            contact.entity_b = pair.b;
             contacts.push(contact);
         }
     }
@@ -145,7 +145,7 @@ pub fn detect_collisions(
     let start_narrow = std::time::Instant::now();
 
     // Narrow phase: test actual collisions
-    let contacts = narrow_phase_collisions(pairs.clone(), &entities, &config);
+    let contacts = narrow_phase_collisions(&pairs, &entities, &config);
     let narrow_time = start_narrow.elapsed().as_micros() as u32;
     let collision_count = contacts.len() as u32;
 
