@@ -3,6 +3,7 @@
 
 pub mod camera;
 pub mod collision;
+pub mod config;
 pub mod contact;
 pub mod despawn;
 pub mod health;
@@ -16,3 +17,4 @@ pub use rendering::RenderMetrics;
 pub use camera::spawn_camera;
 pub use collision::CollisionDiagnostics;
 pub use pooling::{pool_maintenance, log_pool_stats};
+pub use config::{load_config, apply_config};

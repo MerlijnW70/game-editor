@@ -1,0 +1,27 @@
+game:
+  title: "Vampire Survivors"
+  target_fps: 60
+  max_entities: 8192
+  spawn_radius: 400.0
+
+pools:
+  max_enemies: 100
+  max_projectiles: 500
+  max_effects: 200
+
+enemies:
+  base_health: 30.0
+  base_speed: 60.0
+  base_size: 10.0
+  spawn_interval: 0.5
+
+waves:
+  base_duration: 30.0
+  difficulty_scale: 0.1
+  boss_interval: 5
+  difficulty_multiplier: 1.0
+
+rendering:
+  layer_count: 10
+  sprite_batch_size: 256
+  camera_smoothing: 0.1

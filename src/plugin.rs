@@ -1,7 +1,6 @@
 use crate::collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};
 use crate::events::{ContactEvent, DamageEvent, DeathEvent};
-use crate::resources::PoolManager;
-use crate::systems::{camera, contact, despawn, health, movement, pooling, rendering, spawning, collision};
+use crate::systems::{camera, config, contact, despawn, health, movement, pooling, rendering, spawning, collision};
 use bevy::prelude::*;
 
 /// Ordered phases of the core simulation, so other plugins can schedule
@@ -38,7 +37,8 @@ impl Plugin for CoreEcsPlugin {
             .init_resource::<ActiveSpatialGrid>()
             .init_resource::<CollisionConfig>()
             .init_resource::<collision::CollisionDiagnostics>()
-            .insert_resource(PoolManager::new(100, 500, 200))
+            .add_systems(Startup, config::load_config)
+            .add_systems(Update, config::apply_config)
             .configure_sets(
                 Update,
                 (
