@@ -1,5 +1,6 @@
 use crate::archetypes::enemy_bundle;
 use crate::components::*;
+use crate::resources::{PoolManager, PoolType};
 use bevy::prelude::*;
 
 /// Keeps the enemy population at `target_count` by spawning in batches on a
@@ -45,6 +46,7 @@ impl EnemySpawner {
 pub fn spawn_enemies(
     mut commands: Commands,
     mut spawner: ResMut<EnemySpawner>,
+    mut pool: ResMut<PoolManager>,
     existing: Query<(), With<Enemy>>,
     all_entities: Query<()>,
 ) {
@@ -59,13 +61,39 @@ pub fn spawn_enemies(
     if count == 0 {
         return;
     }
+
     let (radius, health, speed) = (spawner.spawn_radius, spawner.max_health, spawner.speed);
-    let bundles: Vec<_> = (0..count)
-        .map(|_| {
+
+    // Try to acquire entities from pool first
+    let mut fallback_spawns = Vec::new();
+
+    for _ in 0..count {
+        if let Some(entity) = pool.acquire(PoolType::Enemy) {
             let angle = spawner.next_f32() * std::f32::consts::TAU;
             let r = radius * (0.75 + 0.25 * spawner.next_f32());
-            enemy_bundle(Vec2::from_angle(angle) * r, health, speed)
-        })
-        .collect();
-    commands.spawn_batch(bundles);
+            let pos = Vec2::from_angle(angle) * r;
+
+            // Configure the pooled entity with enemy components
+            commands.entity(entity)
+                .insert((
+                    Health::new(health),
+                    Velocity(Vec2::ZERO),
+                    Enemy,
+                    Transform2D { position: pos, ..Default::default() },
+                    Layer::default(),
+                ))
+                .remove::<Disabled>()
+                .remove::<Visibility>();
+        } else {
+            // Pool exhausted, fall back to direct spawn
+            let angle = spawner.next_f32() * std::f32::consts::TAU;
+            let r = radius * (0.75 + 0.25 * spawner.next_f32());
+            fallback_spawns.push(enemy_bundle(Vec2::from_angle(angle) * r, health, speed));
+        }
+    }
+
+    // Spawn any fallback entities that couldn't use the pool
+    if !fallback_spawns.is_empty() {
+        commands.spawn_batch(fallback_spawns);
+    }
 }
