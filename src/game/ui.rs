@@ -27,25 +27,58 @@ pub fn ui_system(
         ui_state.last_log_time = 0.0;
 
         let player_health = match player_query.iter().next() {
-            Some(h) => format!("{:.0}", h.current),
+            Some(h) => format!("{:.0}/{:.0}", h.current, h.max),
             None => "N/A".to_string(),
+        };
+
+        let streak_info = if game_state.current_kill_streak > 0 {
+            format!(
+                " | Streak: {}x ({:.1}x mult)",
+                game_state.current_kill_streak,
+                game_state.streak_multiplier()
+            )
+        } else {
+            String::new()
+        };
+
+        let boss_marker = if game_state.is_boss_wave() {
+            " [BOSS WAVE]"
+        } else {
+            ""
         };
 
         if game_state.is_game_over {
             println!(
-                "GAME OVER: {} | Wave: {} | Score: {} | Reason: {}",
-                player_health,
+                "\n╔═══════════════════════════════════════╗",
+            );
+            println!(
+                "║ GAME OVER: {}",
+                game_state.game_over_reason.as_deref().unwrap_or("Unknown")
+            );
+            println!(
+                "║ Wave: {} | Score: {} | Time: {:.1}s",
                 game_state.current_wave,
                 game_state.score,
-                game_state.game_over_reason.as_deref().unwrap_or("Unknown")
+                game_state.time_survived
+            );
+            println!(
+                "║ Best Streak: {}x | Health: {}",
+                game_state.max_consecutive_kills,
+                player_health
+            );
+            println!(
+                "╚═══════════════════════════════════════╝\n",
             );
         } else {
             println!(
-                "Health: {} | Wave: {} | Score: {} | Wave Progress: {:.1}%",
+                "┃ Health: {} | Wave: {}{} | Score: {} | Progress: {:.1}% | Time: {:.1}s{}",
                 player_health,
                 game_state.current_wave,
+                boss_marker,
                 game_state.score,
                 game_state.wave_progress * 100.0,
+                game_state.time_survived,
+                streak_info,
             );
         }
     }
