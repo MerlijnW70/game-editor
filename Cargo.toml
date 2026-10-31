@@ -16,11 +16,20 @@ path = "src/main.rs"
 [dependencies]
 # Headless-friendly: no windowing/rendering features yet. Rendering and
 # camera workers add the features they need.
-bevy = { version = "0.20.1", default-features = false }
+bevy = { version = "0.20.1", default-features = false, features = ["bevy_render", "bevy_sprite", "bevy_core_pipeline", "multi_threaded", "dynamic_linking"] }
+
 
 [[example]]
 name = "ecs_demo"
 path = "examples/ecs_demo.rs"
+
+[[example]]
+name = "rendering_demo"
+path = "examples/rendering_demo.rs"
+
+[[example]]
+name = "collision_demo"
+path = "examples/collision_demo.rs"
 
 [profile.dev]
 opt-level = 1

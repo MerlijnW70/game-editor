@@ -1,4 +1,4 @@
-use crate::components::*;
+use crate::components::{self, *};
 use bevy::prelude::*;
 
 #[derive(Bundle)]
@@ -7,7 +7,7 @@ pub struct EnemyBundle {
     pub transform: Transform2D,
     pub velocity: Velocity,
     pub health: Health,
-    pub sprite: Sprite,
+    pub sprite: components::Sprite,
     pub ai: EnemyAi,
     pub team: Team,
     pub collision: Collision,
@@ -21,7 +21,7 @@ pub fn enemy_bundle(position: Vec2, max_health: f32, speed: f32) -> EnemyBundle 
         transform: Transform2D::from_position(position),
         velocity: Velocity::default(),
         health: Health::new(max_health),
-        sprite: Sprite::new("sprites/enemy.png", Vec2::splat(24.0)),
+        sprite: components::Sprite::new("sprites/enemy.png", Vec2::splat(24.0)),
         ai: EnemyAi { speed },
         team: Team::Enemy,
         collision: Collision::new(10.0, CollisionType::Enemy),

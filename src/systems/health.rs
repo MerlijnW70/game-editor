@@ -1,4 +1,4 @@
-use crate::components::*;
+use crate::components::{self, *};
 use crate::events::{DamageEvent, DeathEvent};
 use bevy::prelude::*;
 
@@ -26,7 +26,7 @@ pub fn apply_damage(
 /// Switches sprite animation to `Dead` for entities that just died.
 pub fn mark_dead_sprites(
     mut death_events: MessageReader<DeathEvent>,
-    mut sprites: Query<&mut Sprite>,
+    mut sprites: Query<&mut components::Sprite>,
 ) {
     for event in death_events.read() {
         if let Ok(mut sprite) = sprites.get_mut(event.entity) {

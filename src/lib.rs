@@ -5,13 +5,15 @@
 //! - `archetypes`: bundle factories for player / enemy / projectile
 //! - `systems`: movement, health, despawn, spawning, contact detection
 //!   (`systems::rendering` and `systems::camera` are reserved)
-//! - `collision`: reserved for the collision worker
+//! - `collision`: spatial partitioning, collision detection, and response
 
 pub mod archetypes;
 pub mod bench;
+pub mod collision;
 pub mod components;
 pub mod events;
 pub mod plugin;
 pub mod systems;
 
-pub use plugin::{CoreEcsPlugin, CoreSet};
+pub use plugin::{CoreEcsPlugin, CoreSet, RenderingPlugin, RenderSet};
+pub use collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};

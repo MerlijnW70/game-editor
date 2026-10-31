@@ -1,4 +1,4 @@
-use crate::components::*;
+use crate::components::{self, *};
 use bevy::prelude::*;
 
 #[derive(Bundle)]
@@ -7,7 +7,7 @@ pub struct ProjectileBundle {
     pub transform: Transform2D,
     pub velocity: Velocity,
     pub damage: Damage,
-    pub sprite: Sprite,
+    pub sprite: components::Sprite,
     pub lifetime: Lifetime,
     pub team: Team,
     pub collision: Collision,
@@ -25,7 +25,7 @@ pub fn projectile_bundle(
         transform: Transform2D::from_position(position),
         velocity: Velocity(velocity),
         damage: Damage::new(damage, DamageType::Projectile),
-        sprite: Sprite::new("sprites/projectile.png", Vec2::splat(8.0)),
+        sprite: components::Sprite::new("sprites/projectile.png", Vec2::splat(8.0)),
         lifetime: Lifetime::new(lifetime_secs),
         team,
         collision: Collision::new(4.0, CollisionType::Projectile),
