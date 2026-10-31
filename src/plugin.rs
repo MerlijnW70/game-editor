@@ -1,6 +1,8 @@
 use crate::collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};
 use crate::debug::DebugProfiler;
 use crate::events::{ContactEvent, DamageEvent, DeathEvent};
+use crate::game::{GameState, FireRateLimiter, UiState};
+use crate::rendering::{BatchingSystem, batching_metrics_system};
 use crate::resources::PrefabLibrary;
 use crate::systems::{camera, config, contact, despawn, health, movement, pooling, prefab_spawn, profiler_system, rendering, spawning, collision};
 use bevy::prelude::*;
@@ -41,6 +43,9 @@ impl Plugin for CoreEcsPlugin {
             .init_resource::<collision::CollisionDiagnostics>()
             .init_resource::<PrefabLibrary>()
             .init_resource::<DebugProfiler>()
+            .init_resource::<GameState>()
+            .init_resource::<FireRateLimiter>()
+            .init_resource::<UiState>()
             .add_systems(Startup, (config::load_config, prefab_spawn::load_prefabs))
             .add_systems(Update, (config::apply_config, profiler_system::profiler_input))
             .configure_sets(
@@ -95,6 +100,7 @@ pub struct RenderingPlugin;
 impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<rendering::RenderMetrics>()
+            .init_resource::<BatchingSystem>()
             .configure_sets(
                 Update,
                 (
@@ -114,6 +120,9 @@ impl Plugin for RenderingPlugin {
                     camera::camera_follow_player.in_set(RenderSet::SyncCamera),
                     camera::sync_camera.in_set(RenderSet::SyncCamera),
                     rendering::calculate_metrics.in_set(RenderSet::Cleanup),
+                    batching_metrics_system::batching_input.in_set(RenderSet::SyncSprites),
+                    batching_metrics_system::collect_batching_metrics.in_set(RenderSet::Cleanup),
+                    batching_metrics_system::log_batching_summary.in_set(RenderSet::Cleanup),
                 ),
             );
     }

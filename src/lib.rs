@@ -16,10 +16,11 @@ pub mod debug;
 pub mod events;
 pub mod game;
 pub mod plugin;
-pub mod pool;
+pub mod rendering;
 pub mod resources;
 pub mod systems;
 
 pub use plugin::{CoreEcsPlugin, CoreSet, RenderingPlugin, RenderSet};
 pub use collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};
+pub use rendering::{GpuBatchConfig, SpriteInstance, BatchingStats};
 pub use resources::{PoolManager, PoolType};
