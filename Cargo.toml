@@ -1,7 +1,7 @@
 [package]
 name = "survivors_engine"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 description = "Vampire Survivors-style 2D game engine: core ECS and entity management"
 license = "MIT OR Apache-2.0"
 
@@ -16,7 +16,7 @@ path = "src/main.rs"
 [dependencies]
 # Headless-friendly: no windowing/rendering features yet. Rendering and
 # camera workers add the features they need.
-bevy = { version = "0.20.1", default-features = false, features = ["bevy_render", "bevy_sprite", "bevy_core_pipeline", "multi_threaded", "dynamic_linking"] }
+bevy = { version = "0.20.1", default-features = false, features = ["bevy_render", "bevy_sprite", "bevy_core_pipeline", "multi_threaded"] }
 
 
 [[example]]
@@ -30,6 +30,10 @@ path = "examples/rendering_demo.rs"
 [[example]]
 name = "collision_demo"
 path = "examples/collision_demo.rs"
+
+[[example]]
+name = "integrated_demo"
+path = "examples/integrated_demo.rs"
 
 [profile.dev]
 opt-level = 1

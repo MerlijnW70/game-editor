@@ -1,7 +1,6 @@
-// Collision imports commented out due to Task 3 compilation issues
-// use crate::collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};
+use crate::collision::{ActiveSpatialGrid, CollisionConfig, CollisionMessage};
 use crate::events::{ContactEvent, DamageEvent, DeathEvent};
-use crate::systems::{camera, contact, despawn, health, movement, rendering, spawning};
+use crate::systems::{camera, contact, despawn, health, movement, rendering, spawning, collision};
 use bevy::prelude::*;
 
 /// Ordered phases of the core simulation, so other plugins can schedule
@@ -34,11 +33,10 @@ impl Plugin for CoreEcsPlugin {
         app.add_message::<DamageEvent>()
             .add_message::<DeathEvent>()
             .add_message::<ContactEvent>()
-            // Collision disabled due to Task 3 issues
-            // .add_message::<CollisionMessage>()
-            // .init_resource::<ActiveSpatialGrid>()
-            // .init_resource::<CollisionConfig>()
-            // .init_resource::<collision::CollisionDiagnostics>()
+            .add_message::<CollisionMessage>()
+            .init_resource::<ActiveSpatialGrid>()
+            .init_resource::<CollisionConfig>()
+            .init_resource::<collision::CollisionDiagnostics>()
             .configure_sets(
                 Update,
                 (
@@ -59,23 +57,19 @@ impl Plugin for CoreEcsPlugin {
                         .in_set(CoreSet::Spawn),
                     (movement::apply_player_input, movement::enemy_chase).in_set(CoreSet::Ai),
                     movement::movement.in_set(CoreSet::Movement),
-                    // Collision detection disabled due to Task 3 compilation issues
-                    // (
-                    //     collision::update_spatial_grid,
-                    //     collision::detect_collisions,
-                    //     collision::apply_collision_response,
-                    //     collision::collisions_to_contact_events,
-                    //     contact::contacts_to_damage,
-                    // )
-                    //     .chain()
-                    //     .in_set(CoreSet::Detect),
-                    contact::contacts_to_damage.in_set(CoreSet::Detect),
+                    (
+                        collision::update_spatial_grid,
+                        collision::detect_collisions,
+                        collision::apply_collision_response,
+                        collision::collisions_to_contact_events,
+                        contact::contacts_to_damage,
+                    )
+                        .chain()
+                        .in_set(CoreSet::Detect),
                     (health::apply_damage, health::mark_dead_sprites)
                         .chain()
                         .in_set(CoreSet::Health),
-                    (despawn::tick_lifetimes, despawn::despawn_dead)
-                    // Collision cleanup disabled
-                    // collision::cleanup_spatial_grid_on_despawn
+                    (despawn::tick_lifetimes, despawn::despawn_dead, collision::cleanup_spatial_grid_on_despawn)
                         .chain()
                         .in_set(CoreSet::Cleanup),
                 ),

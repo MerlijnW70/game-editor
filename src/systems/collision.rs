@@ -227,9 +227,8 @@ pub fn log_collision_diagnostics(diagnostics: Res<CollisionDiagnostics>) {
         + diagnostics.response_us;
 
     if diagnostics.actual_collisions > 0 {
-        trace!(
-            target: "collision",
-            "Collisions: spatial={:?}µs, broad={:?}µs ({} checks), narrow={:?}µs ({} collisions), response={:?}µs, total={:?}µs",
+        eprintln!(
+            "Collisions: spatial={}µs, broad={}µs ({} checks), narrow={}µs ({} collisions), response={}µs, total={}µs",
             diagnostics.spatial_update_us,
             diagnostics.broad_phase_us,
             diagnostics.collision_checks,

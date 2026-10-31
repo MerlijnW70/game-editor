@@ -38,10 +38,10 @@ pub fn run_frames(app: &mut App, frames: u32, target_fps: Option<f64>) -> BenchR
         let elapsed = start.elapsed();
         total += elapsed;
         max = max.max(elapsed);
-        if let Some(budget) = budget
-            && elapsed < budget
-        {
-            std::thread::sleep(budget - elapsed);
+        if let Some(budget) = budget {
+            if elapsed < budget {
+                std::thread::sleep(budget - elapsed);
+            }
         }
     }
     let avg = total.as_secs_f64() / frames.max(1) as f64;

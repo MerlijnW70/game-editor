@@ -37,10 +37,8 @@ pub fn sync_camera(
 
 /// Helper to spawn a 2D camera
 pub fn spawn_camera(commands: &mut Commands, position: Vec2) -> Entity {
-    commands.spawn(Camera2dBundle {
-        transform: Transform::from_translation(Vec3::new(position.x, position.y, 100.0)),
-        ..default()
-    })
-    .insert(Camera2D::new(position))
-    .id()
+    // Note: Camera2dBundle requires DefaultPlugins or rendering features
+    // For now, this is a placeholder that creates an entity with the Camera2D component
+    commands.spawn(Camera2D::new(position))
+        .id()
 }

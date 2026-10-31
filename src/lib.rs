@@ -12,6 +12,7 @@ pub mod bench;
 pub mod collision;
 pub mod components;
 pub mod events;
+pub mod game;
 pub mod plugin;
 pub mod systems;
 
