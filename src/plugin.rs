@@ -52,7 +52,11 @@ impl Plugin for CoreEcsPlugin {
             .add_systems(Startup, (config::load_config, prefab_spawn::load_prefabs))
             .add_systems(
                 Update,
-                (config::apply_config, profiler_system::profiler_input),
+                (
+                    config::apply_config,
+                    // Headless apps (MinimalPlugins, tests, servers) have no keyboard.
+                    profiler_system::profiler_input.run_if(resource_exists::<ButtonInput<KeyCode>>),
+                ),
             )
             .configure_sets(
                 Update,
@@ -130,7 +134,9 @@ impl Plugin for RenderingPlugin {
                     camera::camera_follow_player.in_set(RenderSet::SyncCamera),
                     camera::sync_camera.in_set(RenderSet::SyncCamera),
                     rendering::calculate_metrics.in_set(RenderSet::Cleanup),
-                    batching_metrics_system::batching_input.in_set(RenderSet::SyncSprites),
+                    batching_metrics_system::batching_input
+                        .run_if(resource_exists::<ButtonInput<KeyCode>>)
+                        .in_set(RenderSet::SyncSprites),
                     batching_metrics_system::collect_batching_metrics.in_set(RenderSet::Cleanup),
                     batching_metrics_system::log_batching_summary.in_set(RenderSet::Cleanup),
                 ),
