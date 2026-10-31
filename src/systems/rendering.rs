@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::components::{Sprite, Transform2D, Layer, AnimationFrames};
+use crate::components::{Sprite, Transform2D, Layer, AnimationFrames, Disabled};
 use std::collections::HashMap;
 
 /// Performance metrics for rendering
@@ -7,7 +7,11 @@ use std::collections::HashMap;
 pub struct RenderMetrics {
     pub draw_call_count: usize,
     pub total_sprites: usize,
+    pub visible_sprites: usize,
     pub batches: usize,
+    pub frame_time_ms: f32,
+    pub fps: f32,
+    pub frame_count: u32,
 }
 
 /// Marks entities that have been synced to Bevy rendering
@@ -18,23 +22,21 @@ pub struct RenderedEntity {
 
 /// Sync Transform2D and Sprite components to Bevy's rendering system
 pub fn sync_sprites(
-    query: Query<(Entity, &Transform2D, &Sprite, &Layer, Option<&AnimationFrames>), Without<RenderedEntity>>,
+    active_query: Query<(Entity, &Transform2D, &Sprite, &Layer, Option<&AnimationFrames>), Without<Disabled>>,
+    total_query: Query<&Sprite>,
     mut metrics: ResMut<RenderMetrics>,
 ) {
-    // Count the sprites being rendered
-    metrics.total_sprites = query.iter().len();
+    metrics.total_sprites = total_query.iter().len();
+    metrics.visible_sprites = active_query.iter().len();
 }
 
 /// Update sprite animation frames
 pub fn update_animations(
-    mut query: Query<&mut AnimationFrames>,
+    mut query: Query<&mut AnimationFrames, Without<Disabled>>,
     time: Res<Time>,
 ) {
     for mut animation in &mut query {
         let _frame_changed = animation.update(time.delta_secs());
-        // Frame changed, update texture atlas if used
-        // For now, we're using simple sprites, so this is a placeholder
-        // In a full implementation, we'd update the texture atlas index here
     }
 }
 
@@ -42,6 +44,7 @@ pub fn update_animations(
 pub fn calculate_metrics(
     sprites: Query<&Sprite>,
     mut metrics: ResMut<RenderMetrics>,
+    time: Res<Time>,
 ) {
     let mut texture_counts: HashMap<String, usize> = HashMap::new();
 
@@ -49,7 +52,16 @@ pub fn calculate_metrics(
         *texture_counts.entry(sprite.asset_path.clone()).or_insert(0) += 1;
     }
 
-    // Each texture becomes one draw call in ideal batching
+    // Each texture becomes one draw call (before GPU instancing)
     metrics.draw_call_count = texture_counts.len();
     metrics.batches = texture_counts.len();
+
+    // Track frame time
+    let delta = time.delta_secs();
+    if delta > 0.0 {
+        metrics.fps = 1.0 / delta;
+        metrics.frame_time_ms = delta * 1000.0;
+    }
+
+    metrics.frame_count = metrics.frame_count.saturating_add(1);
 }
