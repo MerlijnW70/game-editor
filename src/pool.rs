@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::components::{Disabled, Velocity, Health, Damage, Sprite, Enemy, Projectile, Lifetime};
+use crate::components::Disabled;
 use std::collections::VecDeque;
 
 /// Tracks pre-allocated entity pools for high-churn entity types.
