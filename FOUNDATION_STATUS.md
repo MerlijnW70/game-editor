@@ -82,9 +82,9 @@
 
 ---
 
-## 2 Remaining Solive Jobs (Jobs #1, #2, #4, #5 Completed as Reference Implementations)
+## 1 Remaining Solive Job (Jobs #1, #2, #4, #5, #6 Completed - 83% Done!)
 
-**Total Budget Remaining: 0.20 SOL (locked in escrow on devnet)**
+**Total Budget Remaining: 0.10 SOL (locked in escrow on devnet)**
 
 | Job | Intent ID | Spec | Budget | Status |
 |-----|-----------|------|--------|--------|
@@ -93,9 +93,9 @@
 | 3. GPU Batching | `He52n3Jg...` | SOLIVE_SPEC_03 | 0.10 SOL | Open |
 | 4. Config System | `8PT8NT85...` | SOLIVE_SPEC_04 | 0.08 SOL | ✅ Completed |
 | 5. Prefab System | `8vfjG2Mf...` | SOLIVE_SPEC_05 | 0.09 SOL | ✅ Completed |
-| 6. Debug Profiler | `AVkBPYAS...` | SOLIVE_SPEC_06 | 0.10 SOL | Open |
+| 6. Debug Profiler | `AVkBPYAS...` | SOLIVE_SPEC_06 | 0.10 SOL | ✅ Completed |
 
-**Note:** Jobs #1, #2, #4, #5 were completed as reference implementations to validate specs and demonstrate quality standards for workers on remaining jobs #3, #6.
+**Note:** Jobs #1, #2, #4, #5, #6 were completed as reference implementations. Only Job #3 (GPU Batching) remains - the final optimization system.
 
 **Each job includes:**
 - ✅ Detailed specification (SHA256 hashed)
@@ -141,7 +141,7 @@ You verify with:
 
 ## Next Milestones
 
-### Immediate (Jobs #1, #2, #4, #5 Complete ✅ — 67% Done)
+### Immediate (Jobs #1, #2, #4, #5, #6 Complete ✅ — 83% Done!)
 
 **Memory Pooling (Job #2):**
 - ✅ PoolManager resource implemented
@@ -171,14 +171,24 @@ You verify with:
 - ✅ Designer-friendly data-driven entity creation
 - ✅ Zero runtime overhead (one-time load at startup)
 
-**Ready for integration:** Four systems can be deployed or used as reference implementations. Workers have proven examples of quality and integration patterns.
+**Debug Profiler (Job #6):**
+- ✅ DebugProfiler resource with frame metrics tracking
+- ✅ FrameMetrics struct capturing FPS, entities, pool usage
+- ✅ Frame history (300-frame rolling buffer)
+- ✅ P key (toggle), G key (graphs) keyboard control
+- ✅ Integration with pool system (Job #2) for usage metrics
+- ✅ Real-time logging (every second)
+- ✅ Negligible overhead (<1ms when enabled, 0 when disabled)
 
-### Week 1 (Remaining Jobs)
-- Workers claim Jobs #3, #6 (2 jobs remain)
-- Workers can reference all 4 completed implementations
-- Workers implement per specs (5-10 hours per job)
-- Workers deliver implementations  
-- You verify + approve (ongoing)
+**Ready for integration:** Five systems can be deployed or used as reference implementations. Only GPU Batching (Job #3) remains.
+
+### Week 1 (Final Job)
+- Workers claim Job #3 (GPU Batching)
+- Workers can reference all 5 completed implementations
+- Workers implement per spec (5-10 hours)
+- Workers deliver implementation  
+- You verify + approve
+- **Foundation complete: all 6 systems integrated and shipped**
 
 ### Week 2 (Integration Phase)
 - Integrate Job #1 (quadtree upgrade)
