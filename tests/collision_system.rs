@@ -30,24 +30,15 @@ fn test_spatial_grid_basic() {
 #[test]
 fn test_circle_collision_detection() {
     // Test overlapping circles
-    let contact = detection::test_circle_collision(
-        Vec2::ZERO,
-        10.0,
-        Vec2::new(15.0, 0.0),
-        10.0,
-    );
+    let contact = detection::test_circle_collision(Vec2::ZERO, 10.0, Vec2::new(15.0, 0.0), 10.0);
     assert!(contact.is_some());
     let c = contact.unwrap();
     assert!(c.penetration > 0.0);
     assert!(c.penetration < 5.1); // circles overlap by ~5 units
 
     // Test non-overlapping circles
-    let no_contact = detection::test_circle_collision(
-        Vec2::ZERO,
-        10.0,
-        Vec2::new(100.0, 0.0),
-        10.0,
-    );
+    let no_contact =
+        detection::test_circle_collision(Vec2::ZERO, 10.0, Vec2::new(100.0, 0.0), 10.0);
     assert!(no_contact.is_none());
 }
 

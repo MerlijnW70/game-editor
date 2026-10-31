@@ -9,11 +9,11 @@
 //! - Memory efficiency (0 allocations after startup)
 
 use bevy::prelude::*;
+use std::time::Instant;
 use survivors_engine::{
     components::{Disabled, Health, Transform2D, Velocity},
     resources::{PoolManager, PoolType},
 };
-use std::time::Instant;
 
 fn main() {
     App::new()
@@ -40,9 +40,9 @@ struct PoolingDemo {
 
 #[derive(Clone, Copy, PartialEq)]
 enum PoolingPhase {
-    Spawning,      // Spawn entities from pool
-    Running,       // Simulate gameplay
-    Despawning,    // Hide and return to pool
+    Spawning,   // Spawn entities from pool
+    Running,    // Simulate gameplay
+    Despawning, // Hide and return to pool
     Completed,
 }
 
@@ -86,7 +86,8 @@ fn spawn_pool_entities(
     // Spawn until we reach target
     for _ in active_count..demo.target_entities {
         if let Some(entity) = pool.acquire(PoolType::Projectile) {
-            commands.entity(entity)
+            commands
+                .entity(entity)
                 .insert((
                     Health::new(1.0),
                     Velocity(Vec2::new(

@@ -3,11 +3,11 @@
 use bevy::prelude::*;
 use bevy::time::TimeUpdateStrategy;
 use std::time::Duration;
-use survivors_engine::CoreEcsPlugin;
 use survivors_engine::archetypes::*;
 use survivors_engine::components::*;
 use survivors_engine::events::DamageEvent;
 use survivors_engine::systems::EnemySpawner;
+use survivors_engine::CoreEcsPlugin;
 
 fn test_app() -> App {
     let mut app = App::new();

@@ -14,11 +14,11 @@ pub mod profiler_system;
 pub mod rendering;
 pub mod spawning;
 
-pub use spawning::EnemySpawner;
-pub use rendering::RenderMetrics;
 pub use camera::spawn_camera;
 pub use collision::CollisionDiagnostics;
-pub use pooling::{pool_maintenance, log_pool_stats};
-pub use config::{load_config, apply_config};
-pub use prefab_spawn::{spawn_from_prefab, load_prefabs};
+pub use config::{apply_config, load_config};
+pub use pooling::{log_pool_stats, pool_maintenance};
+pub use prefab_spawn::{load_prefabs, spawn_from_prefab};
 pub use profiler_system::{collect_profiler_metrics, log_profiler_summary, profiler_input};
+pub use rendering::RenderMetrics;
+pub use spawning::EnemySpawner;

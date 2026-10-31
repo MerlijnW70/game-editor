@@ -12,7 +12,7 @@ use bevy::window::Window;
 use survivors_engine::archetypes::player_bundle;
 use survivors_engine::bench::run_frames;
 use survivors_engine::components::*;
-use survivors_engine::{CoreEcsPlugin, RenderingPlugin, systems::spawn_camera};
+use survivors_engine::{systems::spawn_camera, CoreEcsPlugin, RenderingPlugin};
 
 #[derive(Resource, Default)]
 struct DemoStats {
@@ -48,10 +48,7 @@ fn demo_movement(
         // Circular movement pattern
         let angle = std::f32::consts::TAU * (time.elapsed_secs() / 10.0);
         let radius = 200.0;
-        transform.position = Vec2::new(
-            angle.cos() * radius,
-            angle.sin() * radius,
-        );
+        transform.position = Vec2::new(angle.cos() * radius, angle.sin() * radius);
     }
 }
 
@@ -123,10 +120,7 @@ fn main() {
     ))
     .init_resource::<DemoStats>()
     .add_systems(Startup, setup)
-    .add_systems(
-        Update,
-        (demo_movement, print_metrics),
-    );
+    .add_systems(Update, (demo_movement, print_metrics));
 
     let (frames, fps) = match frames_arg {
         Some(n) => (n, None),
@@ -153,6 +147,9 @@ fn main() {
     if metrics.total_sprites >= 100 {
         println!("PASS: Rendered {} sprites", metrics.total_sprites);
     } else {
-        println!("FAIL: Only rendered {} sprites (expected 100+)", metrics.total_sprites);
+        println!(
+            "FAIL: Only rendered {} sprites (expected 100+)",
+            metrics.total_sprites
+        );
     }
 }

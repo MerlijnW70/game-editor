@@ -80,10 +80,7 @@ fn random_walk(mut query: Query<&mut Velocity>, time: Res<Time>) {
 }
 
 /// Log collision statistics
-fn log_collision_stats(
-    diagnostics: Res<CollisionDiagnostics>,
-    mut stats: ResMut<CollisionStats>,
-) {
+fn log_collision_stats(diagnostics: Res<CollisionDiagnostics>, mut stats: ResMut<CollisionStats>) {
     stats.total_collisions += diagnostics.actual_collisions as u64;
     stats.collision_checks += diagnostics.collision_checks as u64;
 }

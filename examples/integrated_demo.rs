@@ -16,8 +16,8 @@ use bevy::prelude::*;
 use survivors_engine::archetypes::player_bundle;
 use survivors_engine::bench::run_frames;
 use survivors_engine::game::{
-    GameState, input_system, projectile_system, update_game_state, ui_system,
-    wave_system, FireRateLimiter, UiState,
+    input_system, projectile_system, ui_system, update_game_state, wave_system, FireRateLimiter,
+    GameState, UiState,
 };
 use survivors_engine::systems::EnemySpawner;
 use survivors_engine::{CoreEcsPlugin, CoreSet};

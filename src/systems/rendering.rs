@@ -1,5 +1,5 @@
+use crate::components::{AnimationFrames, Disabled, Layer, Sprite, Transform2D};
 use bevy::prelude::*;
-use crate::components::{Sprite, Transform2D, Layer, AnimationFrames, Disabled};
 use std::collections::HashMap;
 
 /// Performance metrics for rendering
@@ -22,7 +22,16 @@ pub struct RenderedEntity {
 
 /// Sync Transform2D and Sprite components to Bevy's rendering system
 pub fn sync_sprites(
-    active_query: Query<(Entity, &Transform2D, &Sprite, &Layer, Option<&AnimationFrames>), Without<Disabled>>,
+    active_query: Query<
+        (
+            Entity,
+            &Transform2D,
+            &Sprite,
+            &Layer,
+            Option<&AnimationFrames>,
+        ),
+        Without<Disabled>,
+    >,
     total_query: Query<&Sprite>,
     mut metrics: ResMut<RenderMetrics>,
 ) {

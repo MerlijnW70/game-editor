@@ -1,8 +1,8 @@
 //! Projectile spawning system: spacebar or mouse click to shoot.
 
-use bevy::prelude::*;
 use crate::archetypes::projectile_bundle;
 use crate::components::{Player, Team};
+use bevy::prelude::*;
 
 /// Resource to track when player last shot (for fire rate limiting).
 #[derive(Resource)]
@@ -15,7 +15,7 @@ impl Default for FireRateLimiter {
     fn default() -> Self {
         Self {
             last_shot: f32::NEG_INFINITY, // Allow first shot immediately
-            cooldown: 0.1, // 0.1 second cooldown between shots
+            cooldown: 0.1,                // 0.1 second cooldown between shots
         }
     }
 }
@@ -37,8 +37,12 @@ pub fn projectile_system(
     }
 
     // Check for fire input
-    let should_fire = (keyboard.as_ref().map_or(false, |k| k.pressed(KeyCode::Space)))
-        || (mouse.as_ref().map_or(false, |m| m.pressed(MouseButton::Left)));
+    let should_fire = (keyboard
+        .as_ref()
+        .map_or(false, |k| k.pressed(KeyCode::Space)))
+        || (mouse
+            .as_ref()
+            .map_or(false, |m| m.pressed(MouseButton::Left)));
 
     if !should_fire {
         return;

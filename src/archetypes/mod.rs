@@ -5,6 +5,6 @@ mod enemy;
 mod player;
 mod projectile;
 
-pub use enemy::{EnemyBundle, enemy_bundle};
-pub use player::{PLAYER_MAX_HEALTH, PlayerBundle, player_bundle};
-pub use projectile::{ProjectileBundle, projectile_bundle};
+pub use enemy::{enemy_bundle, EnemyBundle};
+pub use player::{player_bundle, PlayerBundle, PLAYER_MAX_HEALTH};
+pub use projectile::{projectile_bundle, ProjectileBundle};

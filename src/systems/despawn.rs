@@ -23,7 +23,8 @@ pub fn despawn_dead(
     // Handle dead enemies
     for (entity, health) in &dead_enemies {
         if health.is_dead() {
-            commands.entity(entity)
+            commands
+                .entity(entity)
                 .insert(Disabled)
                 .insert(Visibility::Hidden);
             pool.release(entity, PoolType::Enemy);
@@ -33,7 +34,8 @@ pub fn despawn_dead(
     // Handle dead projectiles
     for (entity, health) in &dead_projectiles {
         if health.is_dead() {
-            commands.entity(entity)
+            commands
+                .entity(entity)
                 .insert(Disabled)
                 .insert(Visibility::Hidden);
             pool.release(entity, PoolType::Projectile);
@@ -43,7 +45,8 @@ pub fn despawn_dead(
     // Handle expired lifetimes (effects)
     for (entity, lifetime) in &expired {
         if lifetime.is_expired() {
-            commands.entity(entity)
+            commands
+                .entity(entity)
                 .insert(Disabled)
                 .insert(Visibility::Hidden);
             pool.release(entity, PoolType::Effect);

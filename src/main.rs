@@ -5,7 +5,7 @@ use bevy::diagnostic::{DiagnosticsPlugin, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 use survivors_engine::archetypes::player_bundle;
 use survivors_engine::bench::run_frames;
-use survivors_engine::{CoreEcsPlugin, systems::EnemySpawner};
+use survivors_engine::{systems::EnemySpawner, CoreEcsPlugin};
 
 fn main() {
     let mut app = App::new();

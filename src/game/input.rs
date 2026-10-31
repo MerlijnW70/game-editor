@@ -1,7 +1,7 @@
 //! Input handling: Keyboard (WASD + arrows)
 
+use crate::components::{Player, PlayerInput};
 use bevy::prelude::*;
-use crate::components::{PlayerInput, Player};
 
 /// System to read keyboard input and update player input component.
 ///

@@ -54,11 +54,17 @@ impl AABB {
             // Top-right
             AABB::new(Vec2::new(center.x, center.y), self.max),
             // Top-left
-            AABB::new(Vec2::new(self.min.x, center.y), Vec2::new(center.x, self.max.y)),
+            AABB::new(
+                Vec2::new(self.min.x, center.y),
+                Vec2::new(center.x, self.max.y),
+            ),
             // Bottom-left
             AABB::new(self.min, center),
             // Bottom-right
-            AABB::new(Vec2::new(center.x, self.min.y), Vec2::new(self.max.x, center.y)),
+            AABB::new(
+                Vec2::new(center.x, self.min.y),
+                Vec2::new(self.max.x, center.y),
+            ),
         ]
     }
 }
@@ -162,7 +168,12 @@ impl QuadtreeNode {
 
     fn remove(&mut self, entity: Entity) -> bool {
         // Try to remove from this node
-        if self.entities.iter().position(|(e, _, _)| *e == entity).is_some() {
+        if self
+            .entities
+            .iter()
+            .position(|(e, _, _)| *e == entity)
+            .is_some()
+        {
             self.entities.retain(|(e, _, _)| *e != entity);
             return true;
         }

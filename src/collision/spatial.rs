@@ -65,7 +65,10 @@ impl SpatialGrid {
         // Add to new cells
         let new_cells: HashSet<_> = Self::cells_for_circle(pos, radius).into_iter().collect();
         for cell in &new_cells {
-            self.cells.entry(*cell).or_insert_with(Vec::new).push(entity);
+            self.cells
+                .entry(*cell)
+                .or_insert_with(Vec::new)
+                .push(entity);
         }
         self.entity_cells.insert(entity, new_cells);
     }

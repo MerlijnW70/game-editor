@@ -46,7 +46,9 @@ pub fn update_spatial_grid(
     spatial.0.clear();
 
     for (entity, transform, collision) in &query {
-        spatial.0.update_entity(entity, transform.position, collision.radius);
+        spatial
+            .0
+            .update_entity(entity, transform.position, collision.radius);
     }
 
     diagnostics.spatial_update_us = start.elapsed().as_micros() as u32;

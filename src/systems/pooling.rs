@@ -1,16 +1,14 @@
-use bevy::prelude::*;
-use crate::components::{Disabled, Velocity, Health, Damage, Sprite, Enemy, Projectile, Lifetime};
+use crate::components::{Damage, Disabled, Enemy, Health, Lifetime, Projectile, Sprite, Velocity};
 use crate::resources::PoolManager;
+use bevy::prelude::*;
 
 /// System to reset and maintain entities in the pool
 /// Clears components from pooled entities to prepare them for reuse
-pub fn pool_maintenance(
-    mut commands: Commands,
-    disabled_entities: Query<Entity, With<Disabled>>,
-) {
+pub fn pool_maintenance(mut commands: Commands, disabled_entities: Query<Entity, With<Disabled>>) {
     for entity in disabled_entities.iter() {
         // Reset components on pooled entities
-        commands.entity(entity)
+        commands
+            .entity(entity)
             .remove::<Velocity>()
             .remove::<Health>()
             .remove::<Damage>()

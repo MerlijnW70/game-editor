@@ -192,8 +192,7 @@ mod tests {
 
     #[test]
     fn test_batching_strategy() {
-        let system = BatchingSystem::new(256)
-            .with_strategy(BatchingStrategy::ByLayer);
+        let system = BatchingSystem::new(256).with_strategy(BatchingStrategy::ByLayer);
 
         assert_eq!(system.strategy, BatchingStrategy::ByLayer);
     }

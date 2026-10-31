@@ -3,9 +3,9 @@
 //! In a headless build, this just logs to console.
 //! In a rendered build, this would display text on screen.
 
-use bevy::prelude::*;
+use crate::components::{Health, Player};
 use crate::game::state::GameState;
-use crate::components::{Player, Health};
+use bevy::prelude::*;
 
 /// Resource to track UI state (for periodic logging in headless mode).
 #[derive(Resource, Default)]
@@ -48,27 +48,20 @@ pub fn ui_system(
         };
 
         if game_state.is_game_over {
-            println!(
-                "\n╔═══════════════════════════════════════╗",
-            );
+            println!("\n╔═══════════════════════════════════════╗",);
             println!(
                 "║ GAME OVER: {}",
                 game_state.game_over_reason.as_deref().unwrap_or("Unknown")
             );
             println!(
                 "║ Wave: {} | Score: {} | Time: {:.1}s",
-                game_state.current_wave,
-                game_state.score,
-                game_state.time_survived
+                game_state.current_wave, game_state.score, game_state.time_survived
             );
             println!(
                 "║ Best Streak: {}x | Health: {}",
-                game_state.max_consecutive_kills,
-                player_health
+                game_state.max_consecutive_kills, player_health
             );
-            println!(
-                "╚═══════════════════════════════════════╝\n",
-            );
+            println!("╚═══════════════════════════════════════╝\n",);
         } else {
             println!(
                 "┃ Health: {} | Wave: {}{} | Score: {} | Progress: {:.1}% | Time: {:.1}s{}",

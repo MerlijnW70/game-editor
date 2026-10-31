@@ -57,34 +57,40 @@ impl PoolManager {
     pub fn initialize(&mut self, commands: &mut Commands) {
         // Pre-spawn enemies
         for _ in 0..self.max_enemies {
-            let entity = commands.spawn((
-                Name::new("pooled_enemy"),
-                Transform::default(),
-                Visibility::Hidden,
-                crate::components::Disabled,
-            )).id();
+            let entity = commands
+                .spawn((
+                    Name::new("pooled_enemy"),
+                    Transform::default(),
+                    Visibility::Hidden,
+                    crate::components::Disabled,
+                ))
+                .id();
             self.enemy_pool.push_back(entity);
         }
 
         // Pre-spawn projectiles
         for _ in 0..self.max_projectiles {
-            let entity = commands.spawn((
-                Name::new("pooled_projectile"),
-                Transform::default(),
-                Visibility::Hidden,
-                crate::components::Disabled,
-            )).id();
+            let entity = commands
+                .spawn((
+                    Name::new("pooled_projectile"),
+                    Transform::default(),
+                    Visibility::Hidden,
+                    crate::components::Disabled,
+                ))
+                .id();
             self.projectile_pool.push_back(entity);
         }
 
         // Pre-spawn effects
         for _ in 0..self.max_effects {
-            let entity = commands.spawn((
-                Name::new("pooled_effect"),
-                Transform::default(),
-                Visibility::Hidden,
-                crate::components::Disabled,
-            )).id();
+            let entity = commands
+                .spawn((
+                    Name::new("pooled_effect"),
+                    Transform::default(),
+                    Visibility::Hidden,
+                    crate::components::Disabled,
+                ))
+                .id();
             self.effect_pool.push_back(entity);
         }
     }

@@ -74,12 +74,16 @@ pub fn spawn_enemies(
             let pos = Vec2::from_angle(angle) * r;
 
             // Configure the pooled entity with enemy components
-            commands.entity(entity)
+            commands
+                .entity(entity)
                 .insert((
                     Health::new(health),
                     Velocity(Vec2::ZERO),
                     Enemy,
-                    Transform2D { position: pos, ..Default::default() },
+                    Transform2D {
+                        position: pos,
+                        ..Default::default()
+                    },
                     Layer::default(),
                 ))
                 .remove::<Disabled>()
