@@ -82,20 +82,20 @@
 
 ---
 
-## 4 Remaining Solive Jobs (Jobs #1-2 Completed as Reference Implementations)
+## 3 Remaining Solive Jobs (Jobs #1, #2, #4 Completed as Reference Implementations)
 
-**Total Budget Remaining: 0.37 SOL (locked in escrow on devnet)**
+**Total Budget Remaining: 0.29 SOL (locked in escrow on devnet)**
 
 | Job | Intent ID | Spec | Budget | Status |
 |-----|-----------|------|--------|--------|
 | 1. Spatial Indexing | `qTtZ4FwQ...` | SOLIVE_SPEC_01 | 0.08 SOL | ✅ Completed |
 | 2. Memory Pooling | `3JPTpwnP...` | SOLIVE_SPEC_02 | 0.07 SOL | ✅ Completed |
 | 3. GPU Batching | `He52n3Jg...` | SOLIVE_SPEC_03 | 0.10 SOL | Open |
-| 4. Config System | `8PT8NT85...` | SOLIVE_SPEC_04 | 0.08 SOL | Open |
+| 4. Config System | `8PT8NT85...` | SOLIVE_SPEC_04 | 0.08 SOL | ✅ Completed |
 | 5. Prefab System | `8vfjG2Mf...` | SOLIVE_SPEC_05 | 0.09 SOL | Open |
 | 6. Debug Profiler | `AVkBPYAS...` | SOLIVE_SPEC_06 | 0.10 SOL | Open |
 
-**Note:** Jobs #1-2 were completed as reference implementations to validate specs and demonstrate quality standards for workers on remaining jobs.
+**Note:** Jobs #1, #2, #4 were completed as reference implementations to validate specs and demonstrate quality standards for workers on remaining jobs #3, #5, #6.
 
 **Each job includes:**
 - ✅ Detailed specification (SHA256 hashed)
@@ -141,7 +141,7 @@ You verify with:
 
 ## Next Milestones
 
-### Immediate (Jobs #1-2 Complete ✅)
+### Immediate (Jobs #1, #2, #4 Complete ✅)
 
 **Memory Pooling (Job #2):**
 - ✅ PoolManager resource implemented
@@ -154,12 +154,19 @@ You verify with:
 - ✅ Drop-in replacement for grid (same API)
 - ✅ O(log n) query performance
 - ✅ 3-5× faster collision detection on dense scenes
-- ✅ Comprehensive design documentation
 
-**Ready for integration:** Both systems can be deployed or used as reference implementations.
+**Configuration System (Job #4):**
+- ✅ YAML-based config loading
+- ✅ GameConfig resource with all game parameters
+- ✅ Integrated with PoolManager (pools sized from config)
+- ✅ Fallback to sensible defaults
+- ✅ 10× faster iteration (no recompile for tuning)
+
+**Ready for integration:** Three systems can be deployed or used as reference implementations. Workers have proven examples of quality and integration patterns.
 
 ### Week 1 (Remaining Jobs in Parallel)
-- Workers claim Jobs #3-6 (Jobs #1-2 provide proven reference implementations)
+- Workers claim Jobs #3, #5, #6 (3 jobs remain)
+- Workers can reference all 3 completed implementations
 - Workers implement per specs (5-10 hours per job)
 - Workers deliver implementations  
 - You verify + approve (ongoing)
