@@ -135,6 +135,8 @@ PoolManager::new(
 )
 ```
 
+**Note:** Pool sizes are configured at startup in `CoreEcsPlugin`. The spawning system will automatically acquire from pools, and despawning will automatically release back to pools.
+
 **Reasoning:**
 - Enemies: Vampire Survivors has 50-200 on-screen enemies. 100 is safe headroom.
 - Projectiles: Player fires 4-8 projectiles/click, clicking 10x/sec = 80/sec rate. 500 = 6+ second buffer.
@@ -146,21 +148,24 @@ PoolManager::new(
 
 ## Integration Checkpoints
 
-### ✅ Completed (Job #2 Foundation)
+### ✅ Completed (Job #2 Full Implementation)
 
-- PoolManager resource creation and initialization
-- Pool data structures (VecDeque per type)
-- Acquire/release/reset operations
-- Pool statistics tracking
-- Integration with plugin system
-- Pool maintenance in cleanup phase
+- ✅ PoolManager resource creation and initialization
+- ✅ Pool data structures (VecDeque per type)
+- ✅ Acquire/release/reset operations
+- ✅ Pool statistics tracking
+- ✅ Integration with plugin system
+- ✅ Pool maintenance in cleanup phase
+- ✅ Modified `spawn_enemies()` to use `pool.acquire()`
+- ✅ Modified `despawn_dead()` to call `pool.release()`
+- ✅ Fallback spawning when pool exhausted
+- ✅ Component reset in pool_maintenance system
 
-### 🔄 Pending (Integration with Spawning)
+### 🔄 Pending (Stress Testing)
 
-- Modify `spawn_enemies()` to use `pool.acquire()` instead of direct spawn
-- Modify `despawn_dead()` to call `pool.release()` instead of despawn
-- Verify that pool_maintenance resets components correctly
 - Stress test with 1000+ entities
+- Performance validation at scale
+- Integration test with full game loop
 
 ### 📊 Metrics to Track
 

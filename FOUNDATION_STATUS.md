@@ -82,18 +82,20 @@
 
 ---
 
-## 6 Solive Jobs Live & Ready
+## 5 Remaining Solive Jobs (Job #2 Completed Internally)
 
-**Total Budget: 0.52 SOL (locked in escrow on devnet)**
+**Total Budget Remaining: 0.45 SOL (locked in escrow on devnet)**
 
-| Job | Intent ID | Spec | Budget | Workers |
-|-----|-----------|------|--------|---------|
+| Job | Intent ID | Spec | Budget | Status |
+|-----|-----------|------|--------|--------|
 | 1. Spatial Indexing | `qTtZ4FwQ...` | SOLIVE_SPEC_01 | 0.08 SOL | Open |
-| 2. Memory Pooling | `3JPTpwnP...` | SOLIVE_SPEC_02 | 0.07 SOL | Open |
+| 2. Memory Pooling | `3JPTpwnP...` | SOLIVE_SPEC_02 | 0.07 SOL | ✅ Completed |
 | 3. GPU Batching | `He52n3Jg...` | SOLIVE_SPEC_03 | 0.10 SOL | Open |
 | 4. Config System | `8PT8NT85...` | SOLIVE_SPEC_04 | 0.08 SOL | Open |
 | 5. Prefab System | `8vfjG2Mf...` | SOLIVE_SPEC_05 | 0.09 SOL | Open |
 | 6. Debug Profiler | `AVkBPYAS...` | SOLIVE_SPEC_06 | 0.10 SOL | Open |
+
+**Note:** Job #2 was completed as proof-of-concept to validate specs and demonstrate quality standards for workers.
 
 **Each job includes:**
 - ✅ Detailed specification (SHA256 hashed)
@@ -139,12 +141,13 @@ You verify with:
 
 ## Next Milestones
 
-### Immediate (Job #2 Foundation Complete ✅)
+### Immediate (Job #2 Complete ✅)
 - ✅ PoolManager resource implemented
 - ✅ Pool maintenance system running
 - ✅ Pooling design documentation complete
-- ⏳ Integrate pools into spawning/despawning systems (next step)
-- ⏳ Stress test with 1000+ entity demo
+- ✅ Pools integrated into spawning/despawning systems
+- ✅ Full entity recycling enabled (acquire/release cycle)
+- ⏳ Stress test with 1000+ entity demo (pending example execution)
 
 ### Week 1 (Remaining Jobs in Parallel)
 - Workers claim Jobs #1, #3-6 (Job #2 foundation is foundation layer)
