@@ -34,19 +34,8 @@ pub fn spawn_from_prefab(
             rotation: template.transform.rotation,
             scale: Vec2::new(template.transform.scale.0, template.transform.scale.1),
         },
-        Layer {
-            z_index: template.visual.layer,
-        },
-        Sprite {
-            size: Vec2::splat(template.visual.size),
-            color: Color::rgba(
-                template.visual.color.0,
-                template.visual.color.1,
-                template.visual.color.2,
-                template.visual.color.3,
-            ),
-            animation_state: Default::default(),
-        },
+        Layer::new(template.visual.layer as u8, 0),
+        Sprite::new("assets/sprites/default.png", Vec2::splat(template.visual.size)),
         Team::Neutral,
         SpawnedFromPrefab {
             template_name: prefab_name.to_string(),
