@@ -43,6 +43,7 @@ impl Plugin for CoreEcsPlugin {
             .add_message::<CollisionMessage>()
             .init_resource::<ActiveSpatialGrid>()
             .init_resource::<CollisionConfig>()
+            .init_resource::<movement::MovementLimits>()
             .init_resource::<collision::CollisionDiagnostics>()
             .init_resource::<PrefabLibrary>()
             .init_resource::<DebugProfiler>()

@@ -1,6 +1,7 @@
 use crate::archetypes::enemy_bundle;
 use crate::components::*;
-use crate::resources::{PoolManager, PoolType};
+use crate::debug::LogThrottle;
+use crate::resources::{GameConfig, PoolManager, PoolType};
 use bevy::prelude::*;
 
 /// Keeps the enemy population at `target_count` by spawning in batches on a
@@ -43,61 +44,71 @@ impl EnemySpawner {
     }
 }
 
+/// Tops the live enemy population up towards `EnemySpawner::target_count`,
+/// at most `max_per_frame` per frame.
+///
+/// - Pooled (disabled) enemies are reused first and get a complete fresh
+///   `enemy_bundle`, so a recycled enemy is indistinguishable from a new one
+///   (sprite, contact damage and current wave speed included).
+/// - New entities are only created while the world holds fewer than
+///   `GameConfig::game.max_entities`; reuse never counts against the cap.
+///   Reaching the cap is reported at most once per second.
+/// - Counts use archetype-level query lengths (`iter().len()` over `With` /
+///   `Without` filters), which sum table sizes instead of visiting entities.
+#[allow(clippy::too_many_arguments)]
 pub fn spawn_enemies(
     mut commands: Commands,
     mut spawner: ResMut<EnemySpawner>,
     mut pool: ResMut<PoolManager>,
-    existing: Query<(), With<Enemy>>,
+    config: Res<GameConfig>,
+    live_enemies: Query<(), (With<Enemy>, Without<Disabled>)>,
     all_entities: Query<()>,
+    time: Res<Time<Real>>,
+    mut cap_report: Local<LogThrottle>,
 ) {
-    // Cap total entities at 8192 to prevent generation overflow
-    const MAX_ENTITIES: usize = 8192;
-    if all_entities.iter().count() >= MAX_ENTITIES {
-        return;
-    }
-
-    let missing = spawner.target_count.saturating_sub(existing.iter().len());
-    let count = missing.min(spawner.max_per_frame);
-    if count == 0 {
+    let missing = spawner
+        .target_count
+        .saturating_sub(live_enemies.iter().len());
+    let wanted = missing.min(spawner.max_per_frame);
+    if wanted == 0 {
         return;
     }
 
     let (radius, health, speed) = (spawner.spawn_radius, spawner.max_health, spawner.speed);
+    let mut room = config
+        .game
+        .max_entities
+        .saturating_sub(all_entities.iter().len());
+    let mut fresh = Vec::new();
+    let mut capped = 0u64;
 
-    // Try to acquire entities from pool first
-    let mut fallback_spawns = Vec::new();
+    for _ in 0..wanted {
+        let angle = spawner.next_f32() * std::f32::consts::TAU;
+        let r = radius * (0.75 + 0.25 * spawner.next_f32());
+        let bundle = enemy_bundle(Vec2::from_angle(angle) * r, health, speed);
 
-    for _ in 0..count {
         if let Some(entity) = pool.acquire(PoolType::Enemy) {
-            let angle = spawner.next_f32() * std::f32::consts::TAU;
-            let r = radius * (0.75 + 0.25 * spawner.next_f32());
-            let pos = Vec2::from_angle(angle) * r;
-
-            // Configure the pooled entity with enemy components
             commands
                 .entity(entity)
-                .insert((
-                    Health::new(health),
-                    Velocity(Vec2::ZERO),
-                    Enemy,
-                    Transform2D {
-                        position: pos,
-                        ..Default::default()
-                    },
-                    Layer::default(),
-                ))
-                .remove::<Disabled>()
-                .remove::<Visibility>();
+                .remove::<(Disabled, Visibility)>()
+                .insert(bundle);
+        } else if room > 0 {
+            room -= 1;
+            fresh.push(bundle);
         } else {
-            // Pool exhausted, fall back to direct spawn
-            let angle = spawner.next_f32() * std::f32::consts::TAU;
-            let r = radius * (0.75 + 0.25 * spawner.next_f32());
-            fallback_spawns.push(enemy_bundle(Vec2::from_angle(angle) * r, health, speed));
+            capped += 1;
         }
     }
 
-    // Spawn any fallback entities that couldn't use the pool
-    if !fallback_spawns.is_empty() {
-        commands.spawn_batch(fallback_spawns);
+    if !fresh.is_empty() {
+        commands.spawn_batch(fresh);
+    }
+
+    if let Some(total) = cap_report.record(time.elapsed_secs_f64(), capped) {
+        eprintln!(
+            "Warning: entity cap game.max_entities = {} reached; {total} enemy spawn(s) skipped \
+             since the last report",
+            config.game.max_entities
+        );
     }
 }

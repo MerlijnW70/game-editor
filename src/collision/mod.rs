@@ -21,7 +21,7 @@ pub use detection::{
 };
 pub use quadtree::{QuadtreeIndex, AABB};
 pub use response::{CollisionResponse, KnockbackConfig};
-pub use spatial::{SpatialGrid, SpatialGridStats};
+pub use spatial::{SpatialError, SpatialGrid, SpatialGridStats};
 
 use bevy::prelude::*;
 

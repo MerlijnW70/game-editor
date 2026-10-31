@@ -1,14 +1,59 @@
 use crate::components::*;
+use crate::debug::LogThrottle;
 use bevy::prelude::*;
 
+/// Engine-wide movement bounds, enforced by `movement`.
+#[derive(Resource, Debug, Clone, Copy, PartialEq)]
+pub struct MovementLimits {
+    /// Highest speed (world units per second) any entity may move at.
+    pub max_speed: f32,
+}
+
+impl Default for MovementLimits {
+    fn default() -> Self {
+        Self { max_speed: 500.0 }
+    }
+}
+
 /// Integrates `Velocity` into `Transform2D::position`.
+///
+/// Speeds above `MovementLimits::max_speed` are clamped (direction kept) and
+/// the clamped value is written back, so the stored velocity is the one
+/// actually used. A non-finite velocity would turn the position into NaN and
+/// poison the spatial grid; it is zeroed and reported at most once per second.
 pub fn movement(
     time: Res<Time>,
-    mut query: Query<(&mut Transform2D, &Velocity), Without<Disabled>>,
+    real_time: Res<Time<Real>>,
+    limits: Res<MovementLimits>,
+    mut query: Query<(Entity, &mut Transform2D, &mut Velocity), Without<Disabled>>,
+    mut report: Local<LogThrottle>,
 ) {
     let dt = time.delta_secs();
-    for (mut transform, velocity) in &mut query {
+    let max_speed = limits.max_speed;
+    let mut non_finite = 0u64;
+    let mut example = None;
+
+    for (entity, mut transform, mut velocity) in &mut query {
+        if !velocity.0.is_finite() {
+            non_finite += 1;
+            example.get_or_insert((entity, velocity.0));
+            velocity.0 = Vec2::ZERO;
+            continue;
+        }
+        if velocity.0.length_squared() > max_speed * max_speed {
+            velocity.0 = velocity.0.clamp_length_max(max_speed);
+        }
         transform.position += velocity.0 * dt;
+    }
+
+    if let (Some(total), Some((entity, value))) = (
+        report.record(real_time.elapsed_secs_f64(), non_finite),
+        example,
+    ) {
+        eprintln!(
+            "Warning: {total} non-finite velocity value(s) zeroed since the last report \
+             (e.g. {entity}: {value})"
+        );
     }
 }
 

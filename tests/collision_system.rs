@@ -19,8 +19,10 @@ fn test_spatial_grid_basic() {
     let e2 = entity(2);
 
     // Insert entities at different positions
-    grid.update_entity(e1, Vec2::ZERO, 10.0);
-    grid.update_entity(e2, Vec2::new(100.0, 0.0), 10.0);
+    grid.update_entity(e1, Vec2::ZERO, 10.0)
+        .expect("valid collider");
+    grid.update_entity(e2, Vec2::new(100.0, 0.0), 10.0)
+        .expect("valid collider");
 
     // Query should find only e1 near origin
     let near_origin = grid.query_circle(Vec2::ZERO, 15.0);

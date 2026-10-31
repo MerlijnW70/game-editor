@@ -18,6 +18,7 @@ use crate::collision::{
     ActiveSpatialGrid, CollisionConfig, CollisionMessage,
 };
 use crate::components::*;
+use crate::debug::LogThrottle;
 use crate::events::ContactEvent;
 use bevy::prelude::*;
 use std::collections::HashSet;
@@ -31,13 +32,22 @@ pub struct CollisionDiagnostics {
     pub response_us: u32,
     pub collision_checks: u32,
     pub actual_collisions: u32,
+    /// Colliders refused by the spatial grid this frame (non-finite position,
+    /// invalid or oversized radius). They take no part in collisions.
+    pub rejected_colliders: u32,
 }
 
-/// Update the spatial grid with current entity positions and collision radii
+/// Update the spatial grid with current entity positions and collision radii.
+///
+/// Colliders the grid refuses are excluded from collision this frame, counted
+/// in `CollisionDiagnostics::rejected_colliders`, and reported on stderr at
+/// most once per second.
 pub fn update_spatial_grid(
     mut spatial: ResMut<ActiveSpatialGrid>,
     query: Query<(Entity, &Transform2D, &Collision), Without<Disabled>>,
     mut diagnostics: ResMut<CollisionDiagnostics>,
+    time: Res<Time<Real>>,
+    mut report: Local<LogThrottle>,
 ) {
     let start = std::time::Instant::now();
 
@@ -45,12 +55,29 @@ pub fn update_spatial_grid(
     // This avoids issues with stale entity references
     spatial.0.clear();
 
+    let mut rejected = 0u32;
+    let mut example = None;
     for (entity, transform, collision) in &query {
-        spatial
+        if let Err(error) = spatial
             .0
-            .update_entity(entity, transform.position, collision.radius);
+            .update_entity(entity, transform.position, collision.radius)
+        {
+            rejected += 1;
+            example.get_or_insert((entity, error));
+        }
     }
 
+    if let (Some(total), Some((entity, error))) = (
+        report.record(time.elapsed_secs_f64(), u64::from(rejected)),
+        example,
+    ) {
+        eprintln!(
+            "Warning: {total} collider(s) rejected by the spatial grid since the last report \
+             (e.g. {entity}: {error}); they are excluded from collision"
+        );
+    }
+
+    diagnostics.rejected_colliders = rejected;
     diagnostics.spatial_update_us = start.elapsed().as_micros() as u32;
 }
 

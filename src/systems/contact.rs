@@ -22,6 +22,8 @@ pub fn detect_contacts(
 }
 
 /// Converts contacts into damage: each side's `Damage` hurts the other.
+/// A collider whose `Damage` is zero (or otherwise not positive) is harmless
+/// by design and emits no event.
 pub fn contacts_to_damage(
     mut contacts: MessageReader<ContactEvent>,
     damagers: Query<&Damage>,
@@ -29,7 +31,10 @@ pub fn contacts_to_damage(
 ) {
     for contact in contacts.read() {
         for (source, target) in [(contact.a, contact.b), (contact.b, contact.a)] {
-            if let Ok(damage) = damagers.get(source) {
+            let Ok(damage) = damagers.get(source) else {
+                continue;
+            };
+            if damage.value > 0.0 {
                 damage_events.write(DamageEvent {
                     target,
                     amount: damage.value,
